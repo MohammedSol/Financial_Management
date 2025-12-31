@@ -1,64 +1,39 @@
 import { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  IconButton,
-  Alert,
-  Chip
+import { 
+  Box, Typography, Button, Grid, Paper, Alert, CircularProgress,
+  Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem 
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import api from '../services/api';
+import AccountCard from '../components/AccountCard';
 
-export default function Accounts() {
-  const [accounts, setAccounts] = useState([]);
+export default function AccountsPage() {
+  const [data, setData] = useState({ accounts: [], totalBalance: 0, allocation: [] });
+  const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  
   const [currentAccount, setCurrentAccount] = useState({
-    name: '',
-    accountNumber: '',
-    currency: 'MAD',
-    type: 'Courant',
-    balance: 0,
-    targetAmount: 0
+    name: '', accountNumber: '', currency: 'MAD', type: 'Courant', balance: 0, targetAmount: 0
   });
-  const [error, setError] = useState('');
-  const [totalBalance, setTotalBalance] = useState(0);
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
   useEffect(() => {
-    loadAccounts();
-    loadTotalBalance();
+    loadDashboard();
   }, []);
 
-  const loadAccounts = async () => {
+  const loadDashboard = async () => {
     try {
-      const response = await api.get('/accounts');
-      setAccounts(response.data);
+      setLoading(true);
+      const res = await api.get('/accounts/dashboard'); 
+      // Sécurité si l'API renvoie null
+      setData(res.data || { accounts: [], totalBalance: 0, allocation: [] });
     } catch (err) {
-      setError('Erreur lors du chargement des comptes');
-    }
-  };
-
-  const loadTotalBalance = async () => {
-    try {
-      const response = await api.get('/accounts/total-balance');
-      setTotalBalance(response.data.totalBalance || 0);
-    } catch (err) {
-      console.error('Erreur chargement solde total');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -67,179 +42,155 @@ export default function Accounts() {
       setCurrentAccount(account);
       setEditMode(true);
     } else {
-      setCurrentAccount({
-        name: '',
-        accountNumber: '',
-        currency: 'MAD',
-        type: 'Courant',
-        balance: 0,
-        targetAmount: 0
-      });
+      setCurrentAccount({ name: '', accountNumber: '', currency: 'MAD', type: 'Courant', balance: 0, targetAmount: 0 });
       setEditMode(false);
     }
     setOpenDialog(true);
   };
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setError('');
-  };
-
   const handleSave = async () => {
     try {
+      const payload = {
+          ...currentAccount,
+          balance: parseFloat(currentAccount.balance),
+          targetAmount: parseFloat(currentAccount.targetAmount)
+      };
+
       if (editMode) {
-        await api.put(`/accounts/${currentAccount.id}`, currentAccount);
+        await api.put(`/accounts/${currentAccount.id}`, payload);
       } else {
-        await api.post('/accounts', currentAccount);
+        await api.post('/accounts', payload);
       }
-      loadAccounts();
-      loadTotalBalance();
-      handleCloseDialog();
+      setOpenDialog(false);
+      loadDashboard(); 
     } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de l\'enregistrement');
+      alert("Erreur lors de l'enregistrement");
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce compte ?')) {
+    if (window.confirm("Voulez-vous vraiment supprimer ce compte ?")) {
       try {
         await api.delete(`/accounts/${id}`);
-        loadAccounts();
-        loadTotalBalance();
+        loadDashboard();
       } catch (err) {
-        setError('Erreur lors de la suppression');
+        alert("Erreur lors de la suppression");
       }
     }
   };
 
+  if (loading && !data.accounts.length) return <Box p={10} display="flex" justifyContent="center"><CircularProgress /></Box>;
+
   return (
-    <Box sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3, md: 4 }, width: '100%', maxWidth: '100%' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">
-          Mes Comptes
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
+    <Box sx={{ p: 4, maxWidth: '1600px', margin: '0 auto' }}>
+      
+      {/* HEADER */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+        <Box>
+            <Typography variant="h4" fontWeight="800">Mon Portefeuille</Typography>
+            <Typography color="textSecondary">Vue d'ensemble de vos actifs</Typography>
+        </Box>
+        <Button 
+            variant="contained" 
+            startIcon={<AddIcon />} 
+            onClick={() => handleOpenDialog()}
+            sx={{ borderRadius: 2, px: 3, py: 1.5, background: 'linear-gradient(90deg, #3a7bd5 0%, #3a6073 100%)' }}
         >
-          Nouveau Compte
+            Nouveau Compte
         </Button>
       </Box>
 
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" color="text.secondary">
-          Solde Total
-        </Typography>
-        <Typography variant="h3" color="primary">
-          {totalBalance.toFixed(2)} MAD
-        </Typography>
-      </Paper>
+      {/* DASHBOARD TOP */}
+      <Grid container spacing={4} mb={4} alignItems="stretch">
+        <Grid item xs={12} md={5}>
+            <Paper sx={{ p: 4, height: '100%', borderRadius: 4, bgcolor: '#1a237e', color: 'white', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <Typography variant="subtitle1" sx={{ opacity: 0.7, letterSpacing: 1 }}>PATRIMOINE TOTAL</Typography>
+                <Typography variant="h2" fontWeight="bold" sx={{ my: 2 }}>
+                    {data.totalBalance?.toLocaleString()} <span style={{fontSize: '0.4em'}}>MAD</span>
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.7 }}>Géré sur {data.accounts?.length || 0} comptes</Typography>
+            </Paper>
+        </Grid>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <Grid item xs={12} md={7}>
+            <Paper sx={{ p: 3, height: 280, borderRadius: 4 }}>
+                <Typography variant="h6" fontWeight="bold" mb={2}>Répartition</Typography>
+                <ResponsiveContainer width="100%" height="85%">
+                    <PieChart>
+                        <Pie
+                            data={data.allocation} cx="50%" cy="50%"
+                            innerRadius={60} outerRadius={80} paddingAngle={5}
+                            dataKey="value"
+                        >
+                            {data.allocation?.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => `${value.toLocaleString()} MAD`} />
+                        <Legend verticalAlign="middle" align="right" layout="vertical"/>
+                    </PieChart>
+                </ResponsiveContainer>
+            </Paper>
+        </Grid>
+      </Grid>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Nom</TableCell>
-              <TableCell>N° Compte</TableCell>
-              <TableCell>Type</TableCell>
-              <TableCell align="right">Solde</TableCell>
-              <TableCell align="right">Objectif</TableCell>
-              <TableCell align="center">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {accounts.map((account) => (
-              <TableRow key={account.id}>
-                <TableCell>{account.name}</TableCell>
-                <TableCell>{account.accountNumber}</TableCell>
-                <TableCell>
-                  <Chip label={account.type} size="small" color="primary" />
-                </TableCell>
-                <TableCell align="right">
-                  {account.balance.toFixed(2)} {account.currency}
-                </TableCell>
-                <TableCell align="right">
-                  {account.targetAmount > 0 ? `${account.targetAmount.toFixed(2)} ${account.currency}` : '-'}
-                </TableCell>
-                <TableCell align="center">
-                  <IconButton onClick={() => handleOpenDialog(account)} color="primary">
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton onClick={() => handleDelete(account.id)} color="error">
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-            {accounts.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} align="center">
-                  Aucun compte trouvé
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      {/* COMPTES GRID */}
+      <Typography variant="h5" fontWeight="bold" mb={3}>Mes Comptes</Typography>
+      
+      {(!data.accounts || data.accounts.length === 0) && (
+          <Alert severity="info">Aucun compte. Créez-en un pour commencer !</Alert>
+      )}
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+      <Grid container spacing={3}>
+        {data.accounts?.map((acc) => (
+            <Grid item xs={12} sm={6} lg={4} key={acc.id}>
+                <AccountCard account={acc} onEdit={handleOpenDialog} onDelete={handleDelete} />
+            </Grid>
+        ))}
+      </Grid>
+
+      {/* DIALOG FORMULAIRE */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{editMode ? 'Modifier le compte' : 'Nouveau compte'}</DialogTitle>
-        <DialogContent>
+        <DialogContent dividers>
           <TextField
-            fullWidth
-            label="Nom du compte"
-            value={currentAccount.name}
-            onChange={(e) => setCurrentAccount({ ...currentAccount, name: e.target.value })}
-            margin="normal"
-            required
+            autoFocus margin="dense" label="Nom" fullWidth value={currentAccount.name}
+            onChange={(e) => setCurrentAccount({...currentAccount, name: e.target.value})}
           />
-          <TextField
-            fullWidth
-            label="Numéro de compte"
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+             <Grid item xs={6}>
+                <TextField select label="Type" fullWidth value={currentAccount.type}
+                    onChange={(e) => setCurrentAccount({...currentAccount, type: e.target.value})}
+                >
+                    <MenuItem value="Courant">Courant</MenuItem>
+                    <MenuItem value="Epargne">Epargne</MenuItem>
+                    <MenuItem value="Caisse">Caisse</MenuItem>
+                </TextField>
+             </Grid>
+             <Grid item xs={6}>
+                <TextField label="Devise" fullWidth value={currentAccount.currency}
+                    onChange={(e) => setCurrentAccount({...currentAccount, currency: e.target.value})}
+                />
+             </Grid>
+          </Grid>
+          <TextField margin="dense" label="Numéro (Optionnel)" fullWidth sx={{ mt: 2 }}
             value={currentAccount.accountNumber}
-            onChange={(e) => setCurrentAccount({ ...currentAccount, accountNumber: e.target.value })}
-            margin="normal"
+            onChange={(e) => setCurrentAccount({...currentAccount, accountNumber: e.target.value})}
           />
-          <TextField
-            fullWidth
-            label="Type"
-            value={currentAccount.type}
-            onChange={(e) => setCurrentAccount({ ...currentAccount, type: e.target.value })}
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            label="Devise"
-            value={currentAccount.currency}
-            onChange={(e) => setCurrentAccount({ ...currentAccount, currency: e.target.value })}
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            label="Solde initial"
-            type="number"
+          <TextField margin="dense" label="Solde" type="number" fullWidth sx={{ mt: 2 }}
             value={currentAccount.balance}
-            onChange={(e) => setCurrentAccount({ ...currentAccount, balance: parseFloat(e.target.value) })}
-            margin="normal"
-            disabled={editMode}
+            onChange={(e) => setCurrentAccount({...currentAccount, balance: e.target.value})}
           />
-          <TextField
-            fullWidth
-            label="Objectif d'épargne"
-            type="number"
-            value={currentAccount.targetAmount}
-            onChange={(e) => setCurrentAccount({ ...currentAccount, targetAmount: parseFloat(e.target.value) })}
-            margin="normal"
-          />
+          {currentAccount.type === 'Epargne' && (
+              <TextField margin="dense" label="Objectif" type="number" fullWidth sx={{ mt: 2 }}
+                value={currentAccount.targetAmount}
+                onChange={(e) => setCurrentAccount({...currentAccount, targetAmount: e.target.value})}
+              />
+          )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Annuler</Button>
-          <Button onClick={handleSave} variant="contained">
-            {editMode ? 'Modifier' : 'Créer'}
-          </Button>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setOpenDialog(false)}>Annuler</Button>
+          <Button onClick={handleSave} variant="contained">{editMode ? 'Sauvegarder' : 'Créer'}</Button>
         </DialogActions>
       </Dialog>
     </Box>

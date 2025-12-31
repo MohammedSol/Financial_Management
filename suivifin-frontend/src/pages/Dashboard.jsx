@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { Box, Typography, Paper, Grid, CircularProgress, Chip, Avatar } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend } from 'chart.js';
-import { Doughnut, Bar, Line } from 'react-chartjs-2';
+import { Doughnut, Bar } from 'react-chartjs-2';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
@@ -14,85 +15,33 @@ ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, LineElement
 export default function Dashboard() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [totalBalance, setTotalBalance] = useState(0);
-  const [summary, setSummary] = useState({
-    totalIncome: 0,
-    totalExpense: 0,
-    balance: 0
-  });
-  const [recentTransactions, setRecentTransactions] = useState([]);
-  const [categoryData, setCategoryData] = useState([]);
-  const [forecastData, setForecastData] = useState(null);
-  const [forecastLoading, setForecastLoading] = useState(true);
+  const [dashboard, setDashboard] = useState(null);
 
   useEffect(() => {
-    loadDashboardData();
-    loadForecastData();
+    const fetchDashboard = async () => {
+      try {
+        const response = await api.get('/dashboard');
+        setDashboard(response.data);
+      } catch (err) {
+        console.error('Erreur chargement dashboard:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
   }, []);
 
-  const loadDashboardData = async () => {
-    try {
-      // Charger le solde total
-      const balanceResponse = await api.get('/accounts/total-balance');
-      setTotalBalance(balanceResponse.data.totalBalance || 0);
-
-      // Charger le résumé des transactions
-      const summaryResponse = await api.get('/transactions/summary');
-      console.log('📊 Summary data:', summaryResponse.data);
-      setSummary(summaryResponse.data);
-
-      // Charger les transactions récentes
-      const transactionsResponse = await api.get('/transactions/recent?count=5');
-      setRecentTransactions(transactionsResponse.data);
-
-      // Charger les transactions pour les graphiques par catégorie
-      const allTransactionsResponse = await api.get('/transactions');
-      const transactions = allTransactionsResponse.data;
-      
-      // Grouper par catégorie
-      const categoryMap = {};
-      transactions.forEach(t => {
-        if (t.category) {
-          const catName = t.category.name;
-          if (!categoryMap[catName]) {
-            categoryMap[catName] = 0;
-          }
-          categoryMap[catName] += t.amount;
-        }
-      });
-      
-      setCategoryData(categoryMap);
-      setLoading(false);
-    } catch (err) {
-      console.error('Erreur chargement dashboard:', err);
-      setLoading(false);
-    }
-  };
-
-  const loadForecastData = async () => {
-    try {
-      setForecastLoading(true);
-      const response = await api.get('/forecast/balance');
-      console.log('🔮 Forecast data:', response.data);
-      setForecastData(response.data);
-      setForecastLoading(false);
-    } catch (err) {
-      console.error('Erreur chargement prévisions:', err);
-      setForecastLoading(false);
-    }
-  };
-
-  const calculateSavings = () => {
-    return summary.totalIncome - summary.totalExpense;
-  };
-
-  if (loading) {
+  if (loading || !dashboard) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
         <CircularProgress size={60} />
       </Box>
     );
   }
+
+  const calculateSavings = () => {
+    return dashboard.totalIncome - dashboard.totalExpense;
+  };
 
   return (
     <Box sx={{ p: 4 }}>
@@ -132,7 +81,7 @@ export default function Dashboard() {
               </Typography>
             </Box>
             <Typography variant="h4" fontWeight={700}>
-              {totalBalance.toFixed(2)}
+              {dashboard.totalBalance?.toFixed(2)}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               MAD
@@ -164,7 +113,7 @@ export default function Dashboard() {
               </Typography>
             </Box>
             <Typography variant="h4" fontWeight={700} color="success.main">
-              {summary.totalIncome.toFixed(2)}
+              {dashboard.totalIncome?.toFixed(2)}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               MAD
@@ -196,7 +145,7 @@ export default function Dashboard() {
               </Typography>
             </Box>
             <Typography variant="h4" fontWeight={700} color="error.main">
-              {summary.totalExpense.toFixed(2)}
+              {dashboard.totalExpense?.toFixed(2)}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               MAD
@@ -262,12 +211,12 @@ export default function Dashboard() {
               Aperçu de vos finances du mois en cours
             </Typography>
             <Box sx={{ height: 350, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {summary.totalIncome > 0 || summary.totalExpense > 0 ? (
+              {dashboard.totalIncome > 0 || dashboard.totalExpense > 0 ? (
                 <Doughnut
                   data={{
                     labels: ['Revenus', 'Dépenses'],
                     datasets: [{
-                      data: [summary.totalIncome, summary.totalExpense],
+                      data: [dashboard.totalIncome, dashboard.totalExpense],
                       backgroundColor: ['#4caf50', '#f44336'],
                       borderWidth: 0,
                       hoverOffset: 10
@@ -329,13 +278,13 @@ export default function Dashboard() {
               Répartition de vos dépenses
             </Typography>
             <Box sx={{ height: 350 }}>
-              {Object.keys(categoryData).length > 0 ? (
+              {dashboard.categoryTotals && Object.keys(dashboard.categoryTotals).length > 0 ? (
                 <Bar
                   data={{
-                    labels: Object.keys(categoryData),
+                    labels: Object.keys(dashboard.categoryTotals),
                     datasets: [{
                       label: 'Montant (MAD)',
-                      data: Object.values(categoryData),
+                      data: Object.values(dashboard.categoryTotals),
                       backgroundColor: '#1976d2',
                       borderRadius: 8,
                       barThickness: 30
@@ -395,11 +344,11 @@ export default function Dashboard() {
               Dernières opérations effectuées
             </Typography>
           </Box>
-          <Chip label={`${recentTransactions.length} transactions`} color="primary" variant="outlined" />
+          <Chip label={`${dashboard.recentTransactions?.length || 0} transactions`} color="primary" variant="outlined" />
         </Box>
-        {recentTransactions.length > 0 ? (
+        {dashboard.recentTransactions && dashboard.recentTransactions.length > 0 ? (
           <Box>
-            {recentTransactions.map((transaction, index) => (
+            {dashboard.recentTransactions.map((transaction, index) => (
               <Box
                 key={transaction.id}
                 sx={{
@@ -421,12 +370,12 @@ export default function Dashboard() {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Avatar 
                     sx={{ 
-                      bgcolor: transaction.type === 'Revenu' ? 'success.light' : 'error.light',
+                      bgcolor: transaction.amount >= 0 ? 'success.light' : 'error.light',
                       width: 45,
                       height: 45
                     }}
                   >
-                    {transaction.type === 'Revenu' ? <TrendingUpIcon /> : <TrendingDownIcon />}
+                    {transaction.amount >= 0 ? <TrendingUpIcon /> : <TrendingDownIcon />}
                   </Avatar>
                   <Box>
                     <Typography variant="body1" fontWeight={600}>
@@ -437,7 +386,7 @@ export default function Dashboard() {
                         day: 'numeric', 
                         month: 'long', 
                         year: 'numeric' 
-                      })} • {transaction.category?.name || 'Non catégorisé'}
+                      })} • {transaction.category || 'Non catégorisé'}
                     </Typography>
                   </Box>
                 </Box>
@@ -445,10 +394,10 @@ export default function Dashboard() {
                   variant="h6"
                   fontWeight={700}
                   sx={{ 
-                    color: transaction.type === 'Revenu' ? 'success.main' : 'error.main'
+                    color: transaction.amount >= 0 ? 'success.main' : 'error.main'
                   }}
                 >
-                  {transaction.type === 'Revenu' ? '+' : '-'}{transaction.amount.toFixed(2)} MAD
+                  {transaction.amount >= 0 ? '+' : '-'}{Math.abs(transaction.amount).toFixed(2)} MAD
                 </Typography>
               </Box>
             ))}

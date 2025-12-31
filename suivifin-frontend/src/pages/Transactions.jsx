@@ -1,445 +1,416 @@
-import { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  IconButton,
-  Alert,
-  Chip,
-  MenuItem,
-  Grid
+import { useState, useEffect, useMemo } from 'react';
+import { 
+  Box, Paper, Typography, Button, TextField, InputAdornment, 
+  Chip, Stack, Grid, Card, CardContent, IconButton, useTheme, LinearProgress, Alert,
+  Dialog, DialogTitle, DialogContent, DialogActions, MenuItem
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import PsychologyIcon from '@mui/icons-material/Psychology';
+import { DataGrid } from '@mui/x-data-grid';
+import { 
+  Add, Search, FilterList, Download, 
+  TrendingUp, TrendingDown, AccountBalanceWallet, 
+  Restaurant, DirectionsCar, ShoppingBag, HealthAndSafety, Home,
+  Work, School, LocalCafe, Edit, Delete // 👈 Ajout des icônes Edit/Delete
+} from '@mui/icons-material';
+import { 
+  BarChart, Bar, Tooltip, ResponsiveContainer, Cell 
+} from 'recharts';
 import api from '../services/api';
 
-export default function Transactions() {
+// --- 1. COMPOSANT KPI ---
+const StatCard = ({ title, amount, icon, color, trend }) => (
+  <Card sx={{ height: '100%', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', borderRadius: 3 }}>
+    <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 3 }}>
+      <Box>
+        <Typography variant="body2" color="textSecondary" fontWeight="bold" sx={{ mb: 1, textTransform: 'uppercase', fontSize: '0.75rem' }}>
+          {title}
+        </Typography>
+        <Typography variant="h5" fontWeight="800" sx={{ color: 'text.primary' }}>
+          {amount}
+        </Typography>
+      </Box>
+      <Box sx={{ bgcolor: `${color}.light`, color: `${color}.main`, p: 1.5, borderRadius: '50%', display: 'flex', opacity: 0.8 }}>
+        {icon}
+      </Box>
+    </CardContent>
+  </Card>
+);
+
+// --- 2. HELPER ICONES ---
+const getCategoryIcon = (categoryName) => {
+    const name = (categoryName || '').toLowerCase();
+    if (name.includes('rest') || name.includes('food')) return <Restaurant fontSize="small" />;
+    if (name.includes('trans') || name.includes('voiture')) return <DirectionsCar fontSize="small" />;
+    if (name.includes('shop') || name.includes('achat')) return <ShoppingBag fontSize="small" />;
+    if (name.includes('sant')) return <HealthAndSafety fontSize="small" />;
+    return <Home fontSize="small" />;
+};
+
+export default function TransactionsPage() {
+  // États
   const [transactions, setTransactions] = useState([]);
-  const [accounts, setAccounts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [stats, setStats] = useState({ balance: 0, income: 0, expense: 0 });
+
+  // États pour Dialog (Ajout/Modif)
   const [openDialog, setOpenDialog] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState({
-    amount: '',
-    description: '',
-    date: new Date().toISOString().split('T')[0],
-    type: 'Dépense',
-    categoryId: '',
-    accountId: ''
+      amount: '', description: '', date: new Date().toISOString().split('T')[0], type: 'Dépense', categoryId: '', accountId: ''
   });
-  const [error, setError] = useState('');
-  const [mlSuggestion, setMlSuggestion] = useState(null);
-  const [filters, setFilters] = useState({
-    type: '',
-    categoryId: '',
-    accountId: ''
-  });
+  
+  // Listes pour les sélecteurs
+  const [accounts, setAccounts] = useState([]);
+  const [categories, setCategories] = useState([]);
 
-  // Fonction pour normaliser les types (gérer les différentes variations)
-  const normalizeType = (type) => {
-    const lowerType = type.toLowerCase();
-    if (lowerType.includes('expense') || lowerType.includes('depense') || lowerType.includes('dépense')) {
-      return 'expense';
-    }
-    if (lowerType.includes('income') || lowerType.includes('revenu')) {
-      return 'income';
-    }
-    return lowerType;
-  };
-
-  // Fonction pour filtrer les catégories selon le type de transaction
-  const getFilteredCategories = (transactionType) => {
-    const normalized = normalizeType(transactionType);
-    return categories.filter(c => normalizeType(c.type) === normalized);
-  };
-
+  // --- CHARGEMENT ---
   useEffect(() => {
-    loadTransactions();
-    loadAccounts();
-    loadCategories();
+    loadData();
+    loadDependencies();
   }, []);
 
-  const loadTransactions = async () => {
+  const loadData = async () => {
     try {
-      const response = await api.get('/transactions');
-      setTransactions(response.data);
+        setLoading(true);
+        const response = await api.get('/transactions');
+        setTransactions(response.data);
+        calculateStats(response.data);
     } catch (err) {
-      setError('Erreur lors du chargement des transactions');
+        console.error(err);
+        setError('Impossible de charger les transactions.');
+    } finally {
+        setLoading(false);
     }
   };
 
-  const loadAccounts = async () => {
-    try {
-      const response = await api.get('/accounts');
-      setAccounts(response.data);
-    } catch (err) {
-      console.error('Erreur chargement comptes');
-    }
+  const loadDependencies = async () => {
+      try {
+          const [accRes, catRes] = await Promise.all([api.get('/accounts'), api.get('/categories')]);
+          setAccounts(accRes.data);
+          setCategories(catRes.data);
+      } catch (e) { console.error("Erreur chargement dépendances", e); }
   };
 
-  const loadCategories = async () => {
-    try {
-      const response = await api.get('/categories');
-      console.log('✅ Catégories chargées:', response.data);
-      console.log('📊 Types de catégories uniques:', [...new Set(response.data.map(c => c.type))]);
-      setCategories(response.data);
-    } catch (err) {
-      console.error('❌ Erreur chargement catégories:', err.response?.data || err.message);
-      setError('Erreur lors du chargement des catégories');
-    }
+  const calculateStats = (data) => {
+      const income = data.filter(t => t.type === 'Revenu' || t.type === 'Income').reduce((acc, t) => acc + t.amount, 0);
+      const expense = data.filter(t => t.type === 'Dépense' || t.type === 'Expense').reduce((acc, t) => acc + t.amount, 0);
+      setStats({ balance: income - expense, income, expense });
   };
 
+  // --- ACTIONS ---
   const handleOpenDialog = (transaction = null) => {
-    if (transaction) {
-      setCurrentTransaction({
-        ...transaction,
-        date: new Date(transaction.date).toISOString().split('T')[0]
-      });
-      setEditMode(true);
-    } else {
-      setCurrentTransaction({
-        amount: '',
-        description: '',
-        date: new Date().toISOString().split('T')[0],
-        type: 'Dépense',
-        categoryId: '',
-        accountId: ''
-      });
-      setEditMode(false);
-    }
-    console.log('📝 Ouverture dialog, catégories disponibles:', categories.length);
-    setOpenDialog(true);
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setError('');
-    setMlSuggestion(null);
-  };
-
-  const handleSuggestCategory = async () => {
-    if (!currentTransaction.description || currentTransaction.description.trim() === '') {
-      setError('Veuillez entrer une description pour obtenir une suggestion');
-      return;
-    }
-
-    try {
-      const response = await api.get(`/transactions/suggest-category?description=${encodeURIComponent(currentTransaction.description)}`);
-      console.log('🤖 Suggestion ML reçue:', response.data);
-      setMlSuggestion(response.data);
-      
-      // Appliquer automatiquement la suggestion si une catégorie est trouvée
-      if (response.data.categoryId) {
-        console.log('✅ Application de la catégorie:', response.data.categoryId, response.data.categoryName);
-        setCurrentTransaction({
-          ...currentTransaction,
-          categoryId: response.data.categoryId.toString() // Convertir en string pour le select
-        });
+      if (transaction) {
+          setEditMode(true);
+          setCurrentTransaction({
+              ...transaction,
+              // Sécurité sur la date pour l'input type="date"
+              date: transaction.date ? new Date(transaction.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+              categoryId: transaction.categoryId,
+              accountId: transaction.accountId
+          });
       } else {
-        setError(`Catégorie "${response.data.categoryName}" suggérée mais non trouvée. Créez-la d'abord.`);
+          setEditMode(false);
+          setCurrentTransaction({ amount: '', description: '', date: new Date().toISOString().split('T')[0], type: 'Dépense', categoryId: '', accountId: '' });
       }
-      
-    } catch (err) {
-      console.error('❌ Erreur ML:', err.response?.data || err.message);
-      setError(err.response?.data?.message || 'Erreur lors de la suggestion ML. Le modèle doit être entraîné d\'abord.');
-    }
+      setOpenDialog(true);
   };
 
   const handleSave = async () => {
-    try {
-      // Valider les champs requis
-      if (!currentTransaction.amount || parseFloat(currentTransaction.amount) <= 0) {
-        setError('Le montant doit être supérieur à 0');
-        return;
+      try {
+          const payload = {
+              ...currentTransaction,
+              amount: parseFloat(currentTransaction.amount),
+              // Conversion sécurisée en ISO pour le backend
+              date: new Date(currentTransaction.date).toISOString() 
+          };
+
+          if (editMode) {
+              await api.put(`/transactions/${currentTransaction.id}`, payload);
+          } else {
+              await api.post('/transactions', payload);
+          }
+          setOpenDialog(false);
+          loadData(); // Recharger
+      } catch (err) {
+          alert("Erreur lors de l'enregistrement");
       }
-      if (!currentTransaction.categoryId) {
-        setError('Veuillez sélectionner une catégorie');
-        return;
-      }
-      if (!currentTransaction.accountId) {
-        setError('Veuillez sélectionner un compte');
-        return;
-      }
-      
-      // Convertir au bon format pour le backend
-      const transactionData = {
-        description: currentTransaction.description,
-        amount: parseFloat(currentTransaction.amount),
-        date: new Date(currentTransaction.date + 'T00:00:00').toISOString(), // Format ISO complet
-        type: currentTransaction.type,
-        categoryId: parseInt(currentTransaction.categoryId),
-        accountId: parseInt(currentTransaction.accountId)
-      };
-      
-      console.log('📤 Envoi transaction:', transactionData);
-      
-      if (editMode) {
-        transactionData.id = currentTransaction.id;
-        await api.put(`/transactions/${currentTransaction.id}`, transactionData);
-      } else {
-        await api.post('/transactions', transactionData);
-      }
-      loadTransactions();
-      loadAccounts(); // Recharger pour mettre à jour les soldes
-      handleCloseDialog();
-    } catch (err) {
-      console.error('❌ Erreur complète:', err);
-      console.error('❌ Erreur response:', err.response);
-      console.error('❌ Erreur data:', err.response?.data);
-      console.error('❌ Erreur status:', err.response?.status);
-      setError(err.response?.data?.message || err.response?.data?.title || err.message || 'Erreur lors de l\'enregistrement');
-    }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette transaction ?')) {
-      try {
-        await api.delete(`/transactions/${id}`);
-        loadTransactions();
-        loadAccounts();
-      } catch (err) {
-        setError('Erreur lors de la suppression');
+      if(window.confirm("Supprimer cette transaction ?")) {
+          try {
+              await api.delete(`/transactions/${id}`);
+              loadData();
+          } catch(e) { alert("Erreur suppression"); }
       }
-    }
   };
 
-  const filteredTransactions = transactions.filter(t => {
-    if (filters.type && t.type !== filters.type) return false;
-    if (filters.categoryId && t.categoryId !== parseInt(filters.categoryId)) return false;
-    if (filters.accountId && t.accountId !== parseInt(filters.accountId)) return false;
-    return true;
-  });
+  // --- COLONNES ---
+  const columns = [
+    { 
+        field: 'date', 
+        headerName: 'Date', 
+        width: 130,
+        renderCell: (params) => {
+            // 🔍 INSPECTION : On cherche la date dans plusieurs champs possibles (maj/min/created)
+            const rawDate = params.row.date || params.row.Date || params.row.createdAt || params.row.CreatedAt;
+
+            // Si aucune date trouvée
+            if (!rawDate) return <Typography variant="body2" color="textSecondary">-</Typography>;
+
+            // Conversion sécurisée
+            const dateObj = new Date(rawDate);
+
+            // Vérification de validité
+            if (isNaN(dateObj.getTime())) {
+                return <Typography variant="caption" color="error">Date Erreur</Typography>;
+            }
+
+            // Affichage propre (ex: 28/12/2025)
+            return (
+                <Typography variant="body2">
+                    {dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                </Typography>
+            );
+        }
+    },
+    { 
+        field: 'description', headerName: 'Description', flex: 1, minWidth: 200,
+        renderCell: (params) => (
+            <Typography variant="body2" fontWeight="500">{params.value}</Typography>
+        )
+    },
+    { 
+        field: 'category', headerName: 'Catégorie', width: 180,
+        renderCell: (params) => {
+            const catName = params.row.category?.name || 'Non classé';
+            return (
+                <Stack direction="row" spacing={1} alignItems="center">
+                    <Box sx={{ p: 0.5, bgcolor: '#f5f5f5', borderRadius: 1, color: '#666', display: 'flex' }}>
+                        {getCategoryIcon(catName)}
+                    </Box>
+                    <Typography variant="body2">{catName}</Typography>
+                </Stack>
+            );
+        }
+    },
+    { 
+        field: 'account', headerName: 'Compte', width: 150,
+        renderCell: (params) => (
+            <Chip label={params.row.account?.name || '-'} size="small" variant="outlined" />
+        )
+    },
+    { 
+        field: 'type', headerName: 'Type', width: 120,
+        renderCell: (params) => (
+            <Chip 
+                label={params.value} 
+                size="small" 
+                color={params.value === 'Revenu' || params.value === 'Income' ? 'success' : 'error'} 
+            />
+        )
+    },
+    { 
+        field: 'amount', headerName: 'Montant', width: 140, align: 'right', headerAlign: 'right',
+        renderCell: (params) => {
+            const isExpense = params.row.type === 'Dépense' || params.row.type === 'Expense';
+            const val = parseFloat(params.value); 
+            return (
+                <Typography fontWeight="bold" sx={{ color: isExpense ? 'error.main' : 'success.main' }}>
+                    {isExpense ? '-' : '+'} {Math.abs(val).toLocaleString()} MAD
+                </Typography>
+            );
+        }
+    },
+    {
+        field: 'actions', headerName: 'Actions', width: 120, align: 'center', sortable: false,
+        renderCell: (params) => (
+            <Stack direction="row" spacing={1}>
+                {/* 🛠️ CORRECTION BOUTONS : Visible directement */}
+                <IconButton size="small" color="primary" onClick={() => handleOpenDialog(params.row)}>
+                    <Edit fontSize="small" />
+                </IconButton>
+                <IconButton size="small" color="error" onClick={() => handleDelete(params.row.id)}>
+                    <Delete fontSize="small" />
+                </IconButton>
+            </Stack>
+        )
+    }
+  ];
+
+  // Données graphiques fictives (pour l'exemple visuel)
+  const chartData = [
+      { name: 'Lun', amt: 400 }, { name: 'Mar', amt: -200 }, { name: 'Mer', amt: 500 }, 
+      { name: 'Jeu', amt: -100 }, { name: 'Ven', amt: -50 }, { name: 'Sam', amt: -300 }, { name: 'Dim', amt: 0 }
+  ];
 
   return (
-    <Box sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3, md: 4 }, width: '100%', maxWidth: '100%' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">
-          Transactions
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
+    <Box sx={{ p: 3, maxWidth: '1600px', margin: '0 auto' }}>
+      
+      {/* Header */}
+      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
+        <Box>
+            <Typography variant="h4" fontWeight="800" sx={{ mb: 0.5 }}>Mes Transactions</Typography>
+            <Typography variant="body2" color="textSecondary">Gérez vos flux financiers</Typography>
+        </Box>
+        <Button 
+            variant="contained" 
+            startIcon={<Add />} 
+            onClick={() => handleOpenDialog()}
+            sx={{ 
+                borderRadius: 2, px: 3, py: 1, 
+                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                boxShadow: '0 3px 15px rgba(33, 203, 243, .3)'
+            }}
         >
-          Nouvelle Transaction
+            Nouvelle Transaction
         </Button>
-      </Box>
+      </Stack>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>Filtres</Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              select
-              label="Type"
-              value={filters.type}
-              onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-            >
-              <MenuItem value="">Tous</MenuItem>
-              <MenuItem value="Revenu">Revenu</MenuItem>
-              <MenuItem value="Dépense">Dépense</MenuItem>
-            </TextField>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              select
-              label="Compte"
-              value={filters.accountId}
-              onChange={(e) => setFilters({ ...filters, accountId: e.target.value })}
-            >
-              <MenuItem value="">Tous</MenuItem>
-              {accounts.map((acc) => (
-                <MenuItem key={acc.id} value={acc.id}>{acc.name}</MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              select
-              label="Catégorie"
-              value={filters.categoryId}
-              onChange={(e) => setFilters({ ...filters, categoryId: e.target.value })}
-            >
-              <MenuItem value="">Toutes</MenuItem>
-              {categories.map((cat) => (
-                <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>
-              ))}
-            </TextField>
-          </Grid>
+      {/* KPIs */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} md={8}>
+            <Grid container spacing={3}>
+                <Grid item xs={12} sm={4}>
+                    <StatCard title="Solde" amount={`${stats.balance.toLocaleString()} MAD`} icon={<AccountBalanceWallet />} color="primary" />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                    <StatCard title="Revenus" amount={`${stats.income.toLocaleString()} MAD`} icon={<TrendingUp />} color="success" />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                    <StatCard title="Dépenses" amount={`${stats.expense.toLocaleString()} MAD`} icon={<TrendingDown />} color="error" />
+                </Grid>
+            </Grid>
         </Grid>
+        <Grid item xs={12} md={4}>
+            <Card sx={{ height: '100%', borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                <CardContent sx={{ height: '100%', p: 2 }}>
+                    <Typography variant="caption" fontWeight="bold" color="textSecondary">TENDANCE SEMAINE</Typography>
+                    <ResponsiveContainer width="100%" height={100}>
+                        <BarChart data={chartData}>
+                            <Tooltip cursor={{fill: 'transparent'}} />
+                            <Bar dataKey="amt" radius={[4, 4, 0, 0]}>
+                                {chartData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.amt > 0 ? '#4caf50' : '#f44336'} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </CardContent>
+            </Card>
+        </Grid>
+      </Grid>
+
+      {/* Barre de recherche */}
+      <Paper sx={{ p: 2, mb: 3, borderRadius: 3, boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+            <TextField 
+                placeholder="Rechercher..." 
+                size="small"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                sx={{ flex: 1 }}
+                InputProps={{ startAdornment: <InputAdornment position="start"><Search color="action" /></InputAdornment> }}
+            />
+            <Button variant="outlined" startIcon={<FilterList />}>Filtres</Button>
+            <Button variant="outlined" startIcon={<Download />}>Export</Button>
+        </Stack>
       </Paper>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Date</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell>Catégorie</TableCell>
-              <TableCell>Compte</TableCell>
-              <TableCell>Type</TableCell>
-              <TableCell align="right">Montant</TableCell>
-              <TableCell align="center">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredTransactions.map((transaction) => (
-              <TableRow key={transaction.id}>
-                <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                <TableCell>{transaction.description}</TableCell>
-                <TableCell>{transaction.category?.name || '-'}</TableCell>
-                <TableCell>{transaction.account?.name || '-'}</TableCell>
-                <TableCell>
-                  <Chip 
-                    label={transaction.type} 
-                    size="small" 
-                    color={transaction.type === 'Revenu' ? 'success' : 'error'}
-                  />
-                </TableCell>
-                <TableCell align="right" sx={{ color: transaction.type === 'Revenu' ? 'success.main' : 'error.main' }}>
-                  {transaction.type === 'Revenu' ? '+' : '-'}{transaction.amount.toFixed(2)} MAD
-                </TableCell>
-                <TableCell align="center">
-                  <IconButton onClick={() => handleOpenDialog(transaction)} color="primary">
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton onClick={() => handleDelete(transaction.id)} color="error">
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-            {filteredTransactions.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  Aucune transaction trouvée
-                </TableCell>
-              </TableRow>
+      {/* Tableau DataGrid */}
+      <Paper sx={{ height: 600, width: '100%', borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+        <DataGrid
+            loading={loading}
+            rows={transactions.filter(t => 
+                t.description?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                t.category?.name?.toLowerCase().includes(searchTerm.toLowerCase())
             )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            columns={columns}
+            disableRowSelectionOnClick
+            pageSizeOptions={[10, 25, 50]}
+            initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+            sx={{
+                border: 'none',
+                '& .MuiDataGrid-columnHeaders': { bgcolor: '#f8f9fa', color: '#6c757d', fontWeight: 700 },
+                '& .MuiDataGrid-row:hover': { bgcolor: '#f5fbfd' },
+                '& .MuiDataGrid-cell:focus': { outline: 'none' }
+            }}
+        />
+      </Paper>
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{editMode ? 'Modifier la transaction' : 'Nouvelle transaction'}</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            label="Description"
-            value={currentTransaction.description}
-            onChange={(e) => setCurrentTransaction({ ...currentTransaction, description: e.target.value })}
-            margin="normal"
-            required
-          />
-          
-          {/* Bouton de suggestion ML */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, mb: 1 }}>
-            <Button
-              variant="outlined"
-              startIcon={<PsychologyIcon />}
-              onClick={handleSuggestCategory}
-              size="small"
-              disabled={!currentTransaction.description}
-            >
-              Suggérer une catégorie (ML)
-            </Button>
-            {mlSuggestion && (
-              <Chip
-                label={`Suggestion: ${mlSuggestion.categoryName}`}
-                color={mlSuggestion.categoryId ? 'success' : 'warning'}
-                size="small"
+      {/* MODALE (DIALOG) AJOUT / MODIF */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>{editMode ? "Modifier la transaction" : "Nouvelle transaction"}</DialogTitle>
+          <DialogContent dividers>
+              <TextField 
+                  label="Description" fullWidth margin="normal" 
+                  value={currentTransaction.description} 
+                  onChange={(e) => setCurrentTransaction({...currentTransaction, description: e.target.value})} 
               />
-            )}
-          </Box>
-
-          <TextField
-            fullWidth
-            label="Montant"
-            type="number"
-            value={currentTransaction.amount}
-            onChange={(e) => setCurrentTransaction({ ...currentTransaction, amount: parseFloat(e.target.value) })}
-            margin="normal"
-            required
-          />
-          <TextField
-            fullWidth
-            label="Date"
-            type="date"
-            value={currentTransaction.date}
-            onChange={(e) => setCurrentTransaction({ ...currentTransaction, date: e.target.value })}
-            margin="normal"
-            required
-          />
-          <TextField
-            fullWidth
-            select
-            label="Type"
-            value={currentTransaction.type}
-            onChange={(e) => setCurrentTransaction({ ...currentTransaction, type: e.target.value })}
-            margin="normal"
-          >
-            <MenuItem value="Revenu">Revenu</MenuItem>
-            <MenuItem value="Dépense">Dépense</MenuItem>
-          </TextField>
-          <TextField
-            fullWidth
-            select
-            label="Compte"
-            value={currentTransaction.accountId}
-            onChange={(e) => setCurrentTransaction({ ...currentTransaction, accountId: e.target.value })}
-            margin="normal"
-            required
-          >
-            {accounts.map((acc) => (
-              <MenuItem key={acc.id} value={acc.id}>{acc.name}</MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            fullWidth
-            select
-            label="Catégorie"
-            value={currentTransaction.categoryId || ''}
-            onChange={(e) => setCurrentTransaction({ ...currentTransaction, categoryId: e.target.value })}
-            margin="normal"
-            required
-          >
-            <MenuItem value="">-- Sélectionner une catégorie --</MenuItem>
-            {(() => {
-              const filtered = getFilteredCategories(currentTransaction.type);
-              console.log('🔍 Type transaction:', currentTransaction.type);
-              console.log('🔍 Catégories filtrées:', filtered.length, filtered.map(c => ({ id: c.id, name: c.name, type: c.type })));
-              return filtered.map((cat) => (
-                <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>
-              ));
-            })()}
-          </TextField>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Annuler</Button>
-          <Button onClick={handleSave} variant="contained">
-            {editMode ? 'Modifier' : 'Créer'}
-          </Button>
-        </DialogActions>
+              <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                      <TextField 
+                          label="Montant" type="number" fullWidth margin="normal"
+                          value={currentTransaction.amount}
+                          onChange={(e) => setCurrentTransaction({...currentTransaction, amount: e.target.value})}
+                          InputProps={{ endAdornment: <InputAdornment position="end">MAD</InputAdornment> }}
+                      />
+                  </Grid>
+                  <Grid item xs={6}>
+                      <TextField 
+                          label="Date" type="date" fullWidth margin="normal"
+                          value={currentTransaction.date}
+                          onChange={(e) => setCurrentTransaction({...currentTransaction, date: e.target.value})}
+                      />
+                  </Grid>
+              </Grid>
+              <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                      <TextField 
+                          select label="Type" fullWidth margin="normal"
+                          value={currentTransaction.type}
+                          onChange={(e) => setCurrentTransaction({...currentTransaction, type: e.target.value})}
+                      >
+                          <MenuItem value="Dépense">Dépense</MenuItem>
+                          <MenuItem value="Revenu">Revenu</MenuItem>
+                      </TextField>
+                  </Grid>
+                  <Grid item xs={6}>
+                      <TextField 
+                          select label="Compte" fullWidth margin="normal"
+                          value={currentTransaction.accountId}
+                          onChange={(e) => setCurrentTransaction({...currentTransaction, accountId: e.target.value})}
+                      >
+                          {accounts.map(acc => <MenuItem key={acc.id} value={acc.id}>{acc.name}</MenuItem>)}
+                      </TextField>
+                  </Grid>
+              </Grid>
+              <TextField 
+                  select label="Catégorie" fullWidth margin="normal"
+                  value={currentTransaction.categoryId || ''}
+                  onChange={(e) => setCurrentTransaction({...currentTransaction, categoryId: e.target.value})}
+              >
+                  <MenuItem value="">Aucune</MenuItem>
+                  {categories
+                    .filter(c => {
+                        // Filtrer les catégories par type si besoin, ou tout afficher
+                        const type = currentTransaction.type.toLowerCase();
+                        const catType = (c.type || '').toLowerCase();
+                        if(type.includes('revenu')) return catType.includes('revenu') || catType.includes('income');
+                        return catType.includes('dépense') || catType.includes('expense') || catType.includes('depense');
+                    })
+                    .map(cat => <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>)}
+              </TextField>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+              <Button onClick={() => setOpenDialog(false)} color="inherit">Annuler</Button>
+              <Button onClick={handleSave} variant="contained" color="primary">Enregistrer</Button>
+          </DialogActions>
       </Dialog>
+
     </Box>
   );
 }

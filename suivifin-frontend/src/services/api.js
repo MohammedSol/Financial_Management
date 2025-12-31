@@ -54,7 +54,12 @@ api.interceptors.request.use(
 // Intercepteur : gérer les erreurs d'authentification et convertir en camelCase
 api.interceptors.response.use(
   (response) => {
-    // Convertir les données reçues en camelCase
+    // 🛑 CORRECTIF : Si c'est un fichier (Blob), on le retourne tel quel sans le modifier
+    if (response.data instanceof Blob || response.config.responseType === 'blob') {
+      return response;
+    }
+
+    // Convertir les données reçues en camelCase (seulement pour le JSON)
     if (response.data && typeof response.data === 'object') {
       response.data = toCamelCase(response.data);
     }

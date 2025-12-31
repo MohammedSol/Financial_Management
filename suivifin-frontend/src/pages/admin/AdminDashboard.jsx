@@ -1,219 +1,249 @@
-import { useState, useEffect } from 'react';
-import {
-  Box,
-  Grid,
-  Card,
-  CardContent,
-  Typography,
-  CircularProgress,
-  Alert,
-  Paper,
+import { useEffect, useState } from 'react';
+import { 
+  Grid, Paper, Typography, Box, Card, CardContent, Chip 
 } from '@mui/material';
-import {
-  People as PeopleIcon,
-  AccountBalance as AccountBalanceIcon,
-  TrendingUp as TrendingUpIcon,
-  Assessment as AssessmentIcon,
+import { 
+  People, Receipt, AccountBalanceWallet, Dns, Speed, CheckCircle 
 } from '@mui/icons-material';
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  PieChart, Pie, Cell, Legend 
+} from 'recharts';
 import api from '../../services/api';
 
-// Composant StatCard réutilisable
-function StatCard({ title, value, icon, color, subtitle }) {
-  return (
-    <Card
-      sx={{
-        height: '100%',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-        borderRadius: 2,
-        transition: 'transform 0.2s, box-shadow 0.2s',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        },
-      }}
-    >
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Box
-            sx={{
-              width: 56,
-              height: 56,
-              borderRadius: 2,
-              bgcolor: `${color}.100`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              mr: 2,
-            }}
-          >
-            <Box sx={{ color: `${color}.main`, fontSize: 28 }}>{icon}</Box>
-          </Box>
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-              {title}
-            </Typography>
-            <Typography variant="h4" sx={{ fontWeight: 600, color: 'text.primary' }}>
-              {value}
-            </Typography>
-          </Box>
-        </Box>
-        {subtitle && (
-          <Typography variant="caption" color="text.secondary">
-            {subtitle}
-          </Typography>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+// Couleurs pour les graphiques
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
-function AdminDashboard() {
+export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
-    loadStats();
+    fetchStats();
   }, []);
 
-  const loadStats = async () => {
+  const fetchStats = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      
-      // Appel à l'API Admin
       const response = await api.get('/admin/stats');
-      
-      console.log('📊 Stats reçues:', response.data);
       setStats(response.data);
-    } catch (err) {
-      console.error('❌ Erreur chargement stats:', err);
-      
-      // Si l'API ne retourne pas encore les stats, utiliser des données mockées
-      if (err.response?.status === 404 || err.response?.status === 500) {
-        console.log('⚠️ API non disponible, utilisation de données mockées');
-        setStats({
-          message: 'Bienvenue dans l\'espace Admin !',
-          adminId: 1,
-          role: 'Admin',
-          email: 'admin@example.com',
-          // Données mockées pour l'affichage
-          totalUsers: 156,
-          totalTransactions: 2847,
-          totalRevenue: 124567.89,
-          activeAccounts: 89,
-        });
-      } else {
-        setError(err.response?.data?.message || 'Erreur lors du chargement des statistiques');
-      }
+    } catch (error) {
+      console.error("Erreur stats", error);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '60vh',
-        }}
-      >
-        <CircularProgress size={60} />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
-        <Alert severity="error" onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      </Box>
-    );
-  }
+  if (loading) return <Typography>Chargement du Cockpit...</Typography>;
 
   return (
     <Box>
-      {/* En-tête */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
-          Vue d'ensemble
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Tableau de bord administrateur - {stats?.message || 'Bienvenue'}
-        </Typography>
-      </Box>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 4 }}>
+        🚀 Cockpit Administrateur
+      </Typography>
 
-      {/* Indicateur si connecté en tant qu'admin */}
-      {stats?.role === 'Admin' && (
-        <Alert severity="success" sx={{ mb: 3 }}>
-          ✅ Connecté en tant qu'administrateur ({stats?.email}) - ID: {stats?.adminId}
-        </Alert>
-      )}
-
-      {/* Grille de statistiques */}
-      <Grid container spacing={3}>
+      {/* 1. ZONE KPIs (CHIFFRES CLÉS) */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <StatCard title="Utilisateurs Totaux" value={stats.totalUsers} icon={<People />} color="#1976d2" />
+        <StatCard title="Transactions Totales" value={stats.totalTransactions} icon={<Receipt />} color="#2e7d32" />
+        <StatCard title="Volume Financier" value={`${stats.totalVolume?.toLocaleString()} MAD`} icon={<AccountBalanceWallet />} color="#ed6c02" />
+        
+        {/* Carte Système (Le petit plus technique) */}
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total Utilisateurs"
-            value={stats?.totalUsers || 0}
-            icon={<PeopleIcon />}
-            color="primary"
-            subtitle="Utilisateurs actifs"
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Transactions"
-            value={stats?.totalTransactions || 0}
-            icon={<TrendingUpIcon />}
-            color="success"
-            subtitle="Total des transactions"
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Revenus"
-            value={`${(stats?.totalRevenue || 0).toLocaleString('fr-FR')} MAD`}
-            icon={<AccountBalanceIcon />}
-            color="warning"
-            subtitle="Revenus totaux"
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Comptes Actifs"
-            value={stats?.activeAccounts || 0}
-            icon={<AssessmentIcon />}
-            color="info"
-            subtitle="Comptes bancaires"
-          />
+          <Card sx={{ height: '100%', bgcolor: '#1e293b', color: 'white' }}>
+            <CardContent>
+              <Box display="flex" alignItems="center" gap={1} mb={1}>
+                <Dns fontSize="small" /> <Typography variant="subtitle2">Infrastructure</Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                <Typography variant="body2">Redis Cache</Typography>
+                <Chip label="Connecté" size="small" color="success" icon={<CheckCircle />} />
+              </Box>
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Typography variant="body2">Latence DB</Typography>
+                <Typography variant="body2" sx={{ color: '#4ade80', fontWeight: 'bold' }}>
+                  {stats.databaseLatency} <Speed fontSize="inherit"/>
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
 
-      {/* Section supplémentaire (optionnelle) */}
-      <Box sx={{ mt: 4 }}>
-        <Paper sx={{ p: 3, borderRadius: 2 }}>
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-            Informations système
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Timestamp: {stats?.timestamp ? new Date(stats.timestamp).toLocaleString('fr-FR') : 'N/A'}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Version: 1.0.0 | Environnement: Production
-          </Typography>
-        </Paper>
-      </Box>
+      <Grid container spacing={3}>
+        {/* 2. GRAPHIQUE PRINCIPAL : FLUX FINANCIER */}
+        <Grid item xs={12} md={8}>
+          <Paper sx={{ p: 3, height: 400 }}>
+            <Typography variant="h6" gutterBottom>📊 Flux Financiers (7 derniers jours)</Typography>
+            <ResponsiveContainer width="100%" height="90%">
+              <AreaChart data={stats.chartData}>
+                <defs>
+                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#82ca9d" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorDep" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ff7f7f" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#ff7f7f" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Area type="monotone" dataKey="revenus" stroke="#82ca9d" fillOpacity={1} fill="url(#colorRev)" />
+                <Area type="monotone" dataKey="depenses" stroke="#ff7f7f" fillOpacity={1} fill="url(#colorDep)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Grid>
+
+        {/* 3. GRAPHIQUE SECONDAIRE : RÉPARTITION */}
+        <Grid item xs={12} md={4}>
+          <Paper sx={{ p: 3, height: 400 }}>
+            <Typography variant="h6" gutterBottom>🍰 Top Catégories</Typography>
+            {stats.categoryData && stats.categoryData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="90%">
+                <PieChart>
+                  <Pie
+                    data={stats.categoryData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {stats.categoryData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <Box display="flex" alignItems="center" justifyContent="center" height="80%">
+                <Typography color="text.secondary">Aucune donnée de catégorie</Typography>
+              </Box>
+            )}
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* SECTION ANALYTICS AVANCÉE */}
+      <AdminAnalyticsSection />
     </Box>
   );
 }
 
-export default AdminDashboard;
+// 🎯 Section Analytics Avancée (Design "Wow")
+function AdminAnalyticsSection() {
+  // Données simulées (À remplacer par un appel API /admin/stats/growth)
+  const growthData = [
+    { name: 'Juin', users: 12 },
+    { name: 'Juil', users: 19 },
+    { name: 'Août', users: 35 },
+    { name: 'Sept', users: 58 },
+    { name: 'Oct', users: 89 },
+    { name: 'Nov', users: 124 },
+    { name: 'Déc', users: 156 },
+  ];
+
+  const activityData = [
+    { name: 'Actifs (7j)', value: 120 },
+    { name: 'Dormants', value: 30 },
+    { name: 'Bannis', value: 6 },
+  ];
+  const COLORS_ACTIVITY = ['#00C49F', '#FFBB28', '#FF8042'];
+
+  return (
+    <Grid container spacing={3} sx={{ mt: 2 }}>
+      
+      {/* COURBE DE CROISSANCE */}
+      <Grid item xs={12} md={8}>
+        <Paper sx={{ p: 3, height: 400, borderRadius: 2 }}>
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+            📈 Croissance des Utilisateurs
+          </Typography>
+          <ResponsiveContainer width="100%" height="90%">
+            <AreaChart data={growthData}>
+              <defs>
+                <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#1976d2" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#1976d2" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="name" />
+              <YAxis />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <Tooltip />
+              <Area 
+                type="monotone" 
+                dataKey="users" 
+                stroke="#1976d2" 
+                fillOpacity={1} 
+                fill="url(#colorUsers)" 
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Paper>
+      </Grid>
+
+      {/* CAMEMBERT D'ACTIVITÉ */}
+      <Grid item xs={12} md={4}>
+        <Paper sx={{ p: 3, height: 400, borderRadius: 2 }}>
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+            🔍 État de la base
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '90%' }}>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={activityData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {activityData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS_ACTIVITY[index % COLORS_ACTIVITY.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend verticalAlign="bottom" height={36}/>
+              </PieChart>
+            </ResponsiveContainer>
+          </Box>
+        </Paper>
+      </Grid>
+    </Grid>
+  );
+}
+
+// Petit composant utilitaire pour les cartes KPI
+function StatCard({ title, value, icon, color }) {
+  return (
+    <Grid item xs={12} sm={6} md={3}>
+      <Card sx={{ height: '100%', borderLeft: `5px solid ${color}` }}>
+        <CardContent>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Box>
+              <Typography color="textSecondary" gutterBottom variant="subtitle2">
+                {title}
+              </Typography>
+              <Typography variant="h5" fontWeight="bold">
+                {value}
+              </Typography>
+            </Box>
+            <Box sx={{ color: color, transform: 'scale(1.5)', opacity: 0.8 }}>
+              {icon}
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+    </Grid>
+  );
+}

@@ -16,6 +16,8 @@ import ExportImport from './pages/ExportImport';
 import RecurringPayments from './pages/RecurringPayments';
 import Forecast from './pages/Forecast';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import UserManagement from './pages/admin/UserManagement';
+import AdminTransactions from './pages/admin/AdminTransactions';
 
 const theme = createTheme({
   palette: {
@@ -78,8 +80,8 @@ function AppRoutes() {
       >
         <Route element={<AdminLayout />}>
           <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="users" element={<div>Page Utilisateurs (à créer)</div>} />
-          <Route path="transactions" element={<div>Page Transactions Admin (à créer)</div>} />
+          <Route path="users" element={<UserManagement />} />
+          <Route path="transactions" element={<AdminTransactions />} />
           <Route path="settings" element={<div>Page Paramètres (à créer)</div>} />
         </Route>
       </Route>
