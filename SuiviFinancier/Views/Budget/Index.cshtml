@@ -1,0 +1,156 @@
+@model IEnumerable<SuiviFinancier.Controllers.BudgetViewModel>
+
+@{ 
+    ViewData["Title"] = "Suivi Budgétaire"; 
+    int daysInMonth = DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month);
+    int daysRemaining = daysInMonth - DateTime.Now.Day;
+    if (daysRemaining == 0) daysRemaining = 1; // Éviter division par zéro le dernier jour
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1><i class="bi bi-speedometer2"></i> Mes Budgets du Mois</h1>
+        <p class="text-muted mb-0">Il reste <strong>@daysRemaining jours</strong> avant la fin du mois.</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary shadow-sm"><i class="bi bi-plus-lg"></i> Nouveau Budget</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info text-center p-5">
+        <i class="bi bi-info-circle fs-1 mb-3 d-block"></i>
+        <h4>Aucun budget défini</h4>
+        <p>Définissez des limites pour vos catégories (Alimentation, Loisirs...) pour mieux contrôler vos dépenses.</p>
+        <a asp-action="Create" class="btn btn-outline-primary mt-2">Commencer</a>
+    </div>
+}
+
+<div class="row g-4">
+    @foreach (var item in Model)
+    {
+        // Logique de couleur
+        string colorClass = "bg-success";
+        string statusText = "Tout va bien";
+        string cardBorder = "border-start border-5"; // Bootstrap 5 border
+        string borderColor = "border-success";
+
+        if (item.Percentage >= 100) 
+        { 
+            colorClass = "bg-danger"; 
+            statusText = "Budget Dépassé !";
+            borderColor = "border-danger";
+        }
+        else if (item.Percentage >= 85) 
+        { 
+            colorClass = "bg-warning"; 
+            statusText = "Attention, critique";
+            borderColor = "border-warning";
+        }
+
+        // Calcul du Reste à vivre par jour
+        decimal dailyBudget = item.RemainingAmount > 0 ? item.RemainingAmount / daysRemaining : 0;
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card shadow h-100 @cardBorder @borderColor">
+                <div class="card-body">
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle d-flex justify-content-center align-items-center me-3 text-white shadow-sm" 
+                                 style="width: 45px; height: 45px; background-color: @item.CategoryColor;">
+                                <i class="bi @item.CategoryIcon"></i>
+                            </div>
+                            <h5 class="card-title mb-0 fw-bold">@item.CategoryName</h5>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-link text-muted p-0" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@item.Id">Modifier</a></li>
+                                <li><a class="dropdown-item text-danger" asp-action="Delete" asp-route-id="@item.Id">Supprimer</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted small">Dépensé</span>
+                        <span class="fw-bold">@item.SpentAmount.ToString("N0") DH</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted small">Limite</span>
+                        <span class="fw-bold text-dark">@item.LimitAmount.ToString("N0") DH</span>
+                    </div>
+
+                    <div class="progress mb-3" style="height: 15px; border-radius: 10px;">
+                        <div class="progress-bar @colorClass progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             style="width: @Math.Min(item.Percentage, 100)%;"
+                             aria-valuenow="@item.Percentage" aria-valuemin="0" aria-valuemax="100">
+                             @item.Percentage%
+                        </div>
+                    </div>
+
+                    <div class="alert @(item.RemainingAmount < 0 ? "alert-danger" : "alert-light") d-flex align-items-center p-2 mb-0" style="font-size: 0.9rem;">
+                        @if (item.RemainingAmount > 0)
+                        {
+                            <i class="bi bi-check-circle-fill text-success me-2 fs-4"></i>
+                            <div>
+                                <span class="d-block fw-bold text-success">@item.RemainingAmount.ToString("N0") DH restants</span>
+                                <small class="text-muted">Soit environ <strong>@dailyBudget.ToString("N0") DH / jour</strong></small>
+                            </div>
+                        }
+                        else
+                        {
+                            <i class="bi bi-exclamation-triangle-fill text-danger me-2 fs-4"></i>
+                            <div>
+                                <span class="d-block fw-bold text-danger">Dépassement de @Math.Abs(item.RemainingAmount).ToString("N0") DH</span>
+                                <small>Arrêtez les dépenses !</small>
+                            </div>
+                        }
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // On cherche s'il y a des budgets critiques (> 100%)
+            // On le fait via Razor qui écrit directement dans le JS
+            @foreach(var item in Model)
+            {
+                if(item.Percentage >= 100)
+                {
+                    <text>
+                    Swal.fire({
+                        title: 'Alerte Budget !',
+                        text: 'Vous avez explosé votre budget "@item.CategoryName" !',
+                        icon: 'error',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 5000,
+                        timerProgressBar: true
+                    });
+                    </text>
+                }
+                else if(item.Percentage >= 85)
+                {
+                    <text>
+                    Swal.fire({
+                        title: 'Attention',
+                        text: 'Le budget "@item.CategoryName" est presque atteint.',
+                        icon: 'warning',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 4000
+                    });
+                    </text>
+                }
+            }
+        });
+    </script>
+}

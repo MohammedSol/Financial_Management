@@ -1,0 +1,72 @@
+@model IEnumerable<SuiviFinancier.Models.Transaction>
+
+@{
+    ViewData["Title"] = "Mes Transactions";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="mb-0">Historique des Transactions</h1>
+
+        <div>
+            <a asp-action="Export" class="btn btn-success me-2">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Exporter (CSV)
+            </a>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Nouvelle Transaction
+            </a>
+        </div>
+    </div>
+
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Catégorie</th>
+                <th>Compte</th>
+                <th>Montant</th>
+                <th>Justificatif</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+    @foreach (var item in Model) {
+            <tr>
+                <td>@item.Date.ToShortDateString()</td>
+                <td>@item.Description</td>
+                <td>
+                    <span class="badge bg-info text-dark">@item.Category?.Name</span>
+                </td>
+                <td>@item.Account?.Name</td>
+                <td>
+                    @if(item.Type == "Revenu" || item.Type == "Income")
+                    {
+                        <span class="text-success fw-bold">+@item.Amount.ToString("C")</span>
+                    }
+                    else
+                    {
+                        <span class="text-danger fw-bold">-@item.Amount.ToString("C")</span>
+                    }
+                </td>
+                <td>
+                    @if (!string.IsNullOrEmpty(item.ReceiptPath))
+                    {
+                        <a href="@item.ReceiptPath" target="_blank" class="btn btn-sm btn-outline-info">
+                            <i class="bi bi-eye"></i> Voir
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="text-muted small">-</span>
+                    }
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-light">✏️</a>
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">🗑️</a>
+                </td>
+            </tr>
+    }
+        </tbody>
+    </table>
+</div>

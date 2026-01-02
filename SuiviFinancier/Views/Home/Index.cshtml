@@ -1,0 +1,374 @@
+﻿@model SuiviFinancier.Models.DashboardViewModel
+
+@{
+    ViewData["Title"] = "Tableau de Bord";
+}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="container">
+    <h1 class="mb-4">Tableau de Bord Financier</h1>
+
+    <div class="card mb-4 border-0 shadow-sm bg-light">
+        <div class="card-body py-3">
+            <form asp-action="Index" method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Date de début</label>
+                    <input type="date" name="startDate" class="form-control" value="@Model.StartDate.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Date de fin</label>
+                    <input type="date" name="endDate" class="form-control" value="@Model.EndDate.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-filter"></i> Filtrer les résultats
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary shadow h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Solde Actuel</h5>
+                    <h2 class="card-text">@Model.TotalBalance.ToString("C")</h2>
+                    <small>Tous comptes confondus</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-success shadow h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Revenus</h5>
+                    <h2 class="card-text">+@Model.Income.ToString("C")</h2>
+                    <small>Sur la période sélectionnée</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-danger shadow h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Dépenses</h5>
+                    <h2 class="card-text">-@Model.Expense.ToString("C")</h2>
+                    <small>Sur la période sélectionnée</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Répartition des Dépenses</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.ExpenseCategoryData.Length > 0)
+                    {
+                        <canvas id="expenseChart"></canvas>
+                    }
+                    else
+                    {
+                        <p class="text-center text-muted">Aucune dépense sur cette période.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Évolution Revenus vs Dépenses</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="evolutionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOUVEAU : Graphique de Prévision du Solde -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 bg-info text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="bi bi-graph-up-arrow"></i> Prévision du Solde Net Cumulé (ML.NET + Mathématique)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="forecastChart"></canvas>
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> 
+                            La partie <strong class="text-primary">pleine</strong> représente l'historique réel, 
+                            la partie <strong class="text-secondary">pointillée</strong> est la prévision jusqu'à la fin de la période.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-speedometer"></i> Suivi des Budgets (Période sélectionnée)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    @if (!Model.BudgetStatuses.Any())
+                    {
+                        <div class="text-center text-muted">
+                            Pas de budgets définis. <a asp-controller="Budget" asp-action="Create">En créer un ?</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row">
+                            @foreach (var item in Model.BudgetStatuses)
+                            {
+                                // Logique de couleur
+                                string colorClass = "bg-success"; // Vert par défaut
+                                if (item.Percentage > 100) { colorClass = "bg-danger"; } // Rouge foncé si dépassé
+                                else if (item.Percentage >= 85) { colorClass = "bg-danger"; } // Rouge
+                                else if (item.Percentage >= 50) { colorClass = "bg-warning"; } // Jaune
+
+                                <div class="col-md-6 mb-4">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span class="fw-bold">@item.CategoryName</span>
+                                        <span>
+                                            @item.SpentAmount.ToString("N0") / @item.LimitAmount.ToString("N0") MAD
+                                            
+                                            @if(item.Percentage > 100)
+                                            {
+                                                <span class="badge bg-danger ms-2">DÉPASSÉ !</span>
+                                            }
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar @colorClass" role="progressbar" 
+                                             style="width: @Math.Min(item.Percentage, 100)%;" 
+                                             aria-valuenow="@item.Percentage" aria-valuemin="0" aria-valuemax="100">
+                                            @item.Percentage%
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Dernières Activités</h6>
+                    <a asp-controller="Transaction" asp-action="Index" class="btn btn-sm btn-primary">Voir tout</a>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-striped mb-0">
+                        <tbody>
+                            @foreach (var item in Model.RecentTransactions)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@item.Description</strong><br />
+                                        <small class="text-muted">@item.Date.ToShortDateString()</small>
+                                    </td>
+                                    <td class="text-end">
+                                        @if (item.Category?.Type == "Revenu")
+                                        {
+                                            <span class="text-success fw-bold">+@item.Amount.ToString("C")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-danger fw-bold">-@item.Amount.ToString("C")</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // On attend que la page soit chargée
+    document.addEventListener("DOMContentLoaded", function() {
+        var ctx = document.getElementById('expenseChart');
+        
+        // Si l'élément canvas existe (donc s'il y a des données)
+        if (ctx) {
+            // Récupération des données envoyées par C# (Sérialisation en JSON)
+            var labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpenseCategoryLabels));
+            var data = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpenseCategoryData));
+
+            var myChart = new Chart(ctx, {
+                type: 'doughnut', // Type: 'pie', 'bar', 'line', 'doughnut'
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Dépenses',
+                        data: data,
+                        backgroundColor: [
+                            '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'
+                        ],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- NOUVEAU GRAPHIQUE LINÉAIRE ---
+        var ctx2 = document.getElementById('evolutionChart');
+        if (ctx2) {
+            var evolutionChart = new Chart(ctx2, {
+                type: 'line', // Type 'line' pour l'évolution
+                data: {
+                    // Les jours (Axe X)
+                    labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SplineChartLabels)),
+                    datasets: [
+                        {
+                            label: 'Revenus',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.IncomeDailyData)),
+                            borderColor: '#1cc88a', // Vert
+                            backgroundColor: 'rgba(28, 200, 138, 0.1)', // Vert transparent
+                            tension: 0.3, // Pour arrondir les courbes (0 = ligne droite)
+                            fill: true
+                        },
+                        {
+                            label: 'Dépenses',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpenseDailyData)),
+                            borderColor: '#e74a3b', // Rouge
+                            backgroundColor: 'rgba(231, 74, 59, 0.1)', // Rouge transparent
+                            tension: 0.3,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- NOUVEAU GRAPHIQUE DE PRÉVISION (Solde Cumulé avec Prévision ML.NET) ---
+        var ctx3 = document.getElementById('forecastChart');
+        if (ctx3) {
+            var forecastChart = new Chart(ctx3, {
+                type: 'line', 
+                data: {
+                    // Utilise les labels historiques ET futurs
+                    labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CumulativeChartLabels)), 
+                    datasets: [
+                        {
+                            label: 'Solde Net Cumulé (Historique & Prévision)',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CumulativeBalanceData)),
+                            borderColor: '#4e73df', 
+                            backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 3,
+                            
+                            // --- LA MAGIE DE LA PRÉVISION : Changement de style en milieu de courbe ---
+                            segment: {
+                                // Fonction qui s'applique à chaque segment de la ligne
+                                borderDash: (ctx) => {
+                                    const index = ctx.p0DataIndex;
+                                    const forecastStart = @Model.ForecastStartIndex; // Récupère l'index du début de la prévision
+                                    // Si l'index est égal ou supérieur au point de départ, on met des pointillés
+                                    return index >= forecastStart ? [5, 5] : undefined; 
+                                },
+                                // Changement de couleur pour le futur
+                                borderColor: (ctx) => {
+                                    const index = ctx.p0DataIndex;
+                                    const forecastStart = @Model.ForecastStartIndex;
+                                    return index >= forecastStart ? '#adb5bd' : '#4e73df'; // Gris pour le futur, Bleu pour le passé
+                                }
+                            }
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    // Ajoute "(Prévision)" dans la bulle d'aide pour les points futurs
+                                    if (context.dataIndex >= @Model.ForecastStartIndex) {
+                                        label += 'Prévision : ';
+                                    } else {
+                                        label += 'Historique : ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        // Formatte la devise (MAD pour Maroc)
+                                        label += context.parsed.y.toFixed(2) + ' MAD';
+                                    }
+                                    return label;
+                                }
+                            }
+                        },
+                        legend: { 
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: { 
+                                display: true, 
+                                text: 'Solde Net Cumulé (MAD)' 
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(2) + ' MAD';
+                                }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>

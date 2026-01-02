@@ -1,0 +1,31 @@
+@model SuiviFinancier.Models.Budget
+
+@{
+    ViewData["Title"] = "Supprimer Budget";
+}
+
+<h1>Supprimer ce budget</h1>
+
+<h3>Voulez-vous vraiment supprimer cette limite ?</h3>
+<div>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-4">Nom</dt>
+        <dd class="col-sm-8">@Model.Name</dd>
+
+        <dt class="col-sm-4">Catégorie</dt>
+        <dd class="col-sm-8">@Model.Category?.Name</dd>
+        
+        <dt class="col-sm-4">Limite fixée</dt>
+        <dd class="col-sm-8">@Model.Amount.ToString("C")</dd>
+
+        <dt class="col-sm-4">Période</dt>
+        <dd class="col-sm-8">Du @Model.StartDate.ToString("dd/MM/yyyy") au @Model.EndDate.ToString("dd/MM/yyyy")</dd>
+    </dl>
+    
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="Id" />
+        <input type="submit" value="Supprimer" class="btn btn-danger" /> |
+        <a asp-action="Index" class="btn btn-secondary">Annuler</a>
+    </form>
+</div>

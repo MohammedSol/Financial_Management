@@ -1,0 +1,53 @@
+@model IEnumerable<SuiviFinancier.Models.Transaction>
+
+@{
+    ViewData["Title"] = "Transactions";
+}
+
+<div class="container mt-4">
+    <h1>@ViewData["Title"]</h1>
+
+    <p>
+        <a asp-action="Create" class="btn btn-primary">Nouvelle Transaction</a>
+    </p>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Montant</th>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Compte</th>
+                <th>Catégorie</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.Description</td>
+                        <td>@item.Amount.ToString("C")</td>
+                        <td>@item.Date.ToString("dd/MM/yyyy")</td>
+                        <td>@item.Type</td>
+                        <td>@item.Account?.Name</td>
+                        <td>@item.Category?.Name</td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Modifier</a>
+                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Supprimer</a>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="7" class="text-center">Aucune transaction disponible</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

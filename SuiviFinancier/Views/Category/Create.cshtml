@@ -1,0 +1,95 @@
+@model SuiviFinancier.Models.Category
+
+@{ ViewData["Title"] = "Nouvelle Catégorie"; }
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Créer une catégorie de suivi</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <div class="row">
+                            <div class="col-md-6 border-end">
+                                <h6 class="text-muted mb-3">Informations Générales</h6>
+                                
+                                <div class="form-group mb-3">
+                                    <label asp-for="Name" class="form-label fw-bold">Nom de la catégorie</label>
+                                    <input asp-for="Name" class="form-control" placeholder="Ex: Alimentation, Loyer..." />
+                                    <span asp-validation-for="Name" class="text-danger"></span>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label asp-for="Type" class="form-label fw-bold">Type de flux</label>
+                                    <select asp-for="Type" class="form-select">
+                                        <option value="Depense">Dépense (Sortie d'argent)</option>
+                                        <option value="Revenu">Revenu (Entrée d'argent)</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label asp-for="Description" class="form-label">Description (Optionnel)</label>
+                                    <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-3">Apparence dans le tableau de bord</h6>
+
+                                <div class="form-group mb-4">
+                                    <label asp-for="Color" class="form-label fw-bold">Code Couleur</label>
+                                    <div class="d-flex align-items-center">
+                                        <input asp-for="Color" type="color" class="form-control form-control-color" value="#4e73df" title="Choisir une couleur">
+                                        <span class="text-muted ms-2 small">Cette couleur sera utilisée dans les graphiques.</span>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label fw-bold mb-2">Icône représentative</label>
+                                    <div class="border rounded p-2 bg-light" style="max-height: 220px; overflow-y: auto;">
+                                        <div class="d-flex flex-wrap gap-2 justify-content-center">
+                                            @* Liste d'icônes adaptées au SUIVI FINANCIER *@
+                                            @{
+                                                string[] icons = new string[] { 
+                                                    "bi-cart-fill", "bi-basket-fill", "bi-house-door-fill", "bi-car-front-fill", 
+                                                    "bi-controller", "bi-film", "bi-heart-pulse-fill", "bi-book-half", 
+                                                    "bi-airplane-fill", "bi-train-front-fill", "bi-briefcase-fill", "bi-piggy-bank-fill", 
+                                                    "bi-phone-fill", "bi-lightning-fill", "bi-droplet-fill", "bi-wifi",
+                                                    "bi-mortarboard-fill", "bi-gift-fill", "bi-tools", "bi-currency-euro"
+                                                };
+                                            }
+
+                                            @foreach (var icon in icons)
+                                            {
+                                                <div class="form-check form-check-inline m-0">
+                                                    <input class="btn-check" type="radio" asp-for="Icon" value="@icon" id="icon_@icon">
+                                                    <label class="btn btn-outline-secondary p-2" for="icon_@icon">
+                                                        <i class="bi @icon fs-4"></i>
+                                                    </label>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                    <span asp-validation-for="Icon" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                            <a asp-action="Index" class="btn btn-outline-secondary">Retour à la liste</a>
+                            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check-lg"></i> Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

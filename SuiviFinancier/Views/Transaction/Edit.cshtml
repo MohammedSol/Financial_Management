@@ -1,0 +1,66 @@
+@model SuiviFinancier.Models.Transaction
+
+@{
+    ViewData["Title"] = "Modifier Transaction";
+}
+
+<div class="container mt-4">
+    <h1>Modifier</h1>
+    <hr />
+    <div class="row">
+        <div class="col-md-6">
+            <form asp-action="Edit">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <input type="hidden" asp-for="Id" />
+
+                <div class="form-group mb-3">
+                    <label asp-for="Date" class="control-label"></label>
+                    <input asp-for="Date" class="form-control" type="date" />
+                    <span asp-validation-for="Date" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Description" class="control-label">Description</label>
+                    <input asp-for="Description" class="form-control" />
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Amount" class="control-label">Montant</label>
+                    <input asp-for="Amount" class="form-control" type="number" step="0.01" />
+                    <span asp-validation-for="Amount" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Type" class="control-label">Type</label>
+                    <select asp-for="Type" class="form-control">
+                        <option value="Depense">Dépense</option>
+                        <option value="Revenu">Revenu</option>
+                    </select>
+                    <span asp-validation-for="Type" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="CategoryId" class="control-label">Catégorie</label>
+                    <select asp-for="CategoryId" class="form-control" asp-items="ViewBag.CategoryId"></select>
+                    <span asp-validation-for="CategoryId" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="AccountId" class="control-label">Compte</label>
+                    <select asp-for="AccountId" class="form-control" asp-items="ViewBag.AccountId"></select>
+                    <span asp-validation-for="AccountId" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <input type="submit" value="Enregistrer" class="btn btn-success" />
+                    <a asp-action="Index" class="btn btn-secondary">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

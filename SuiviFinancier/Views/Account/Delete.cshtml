@@ -1,0 +1,30 @@
+@model SuiviFinancier.Models.Account
+
+@{
+    ViewData["Title"] = "Supprimer Compte";
+}
+
+<div class="container mt-4">
+    <h1>Supprimer un compte</h1>
+    <div class="alert alert-danger">
+        Attention : La suppression de ce compte entraînera la perte de l'historique de son solde.
+    </div>
+
+    <div>
+        <h4>@Model.Name</h4>
+        <hr />
+        <dl class="row">
+            <dt class="col-sm-2">@Html.DisplayNameFor(model => model.Type)</dt>
+            <dd class="col-sm-10">@Html.DisplayFor(model => model.Type)</dd>
+            
+            <dt class="col-sm-2">@Html.DisplayNameFor(model => model.Balance)</dt>
+            <dd class="col-sm-10">@Model.Balance.ToString("C")</dd>
+        </dl>
+        
+        <form asp-action="Delete">
+            <input type="hidden" asp-for="Id" />
+            <input type="submit" value="Confirmer la suppression" class="btn btn-danger" />
+            <a asp-action="Index" class="btn btn-secondary">Annuler</a>
+        </form>
+    </div>
+</div>

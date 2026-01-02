@@ -1,0 +1,49 @@
+# .NET Core
+bin/
+obj/
+*.user
+*.suo
+*.cache
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+# Visual Studio
+.vs/
+.vscode/
+!.vscode/extensions.json
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# Files built by Visual Studio
+*.dll
+*.exe
+*.pdb
+*.log
+*.ilk
+*.obj
+*.iobj
+*.pch
+*.ipdb
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# ML.NET
+*.mbconfig
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# User-specific files
+appsettings.Development.json
+
+# Backup files
+*.bak

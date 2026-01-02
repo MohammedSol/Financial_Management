@@ -1,0 +1,71 @@
+﻿@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Inscription";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            
+            <div class="card shadow-lg border-0 rounded-lg mt-5">
+                
+                <div class="card-header bg-success text-white text-center py-4">
+                    <h3 class="font-weight-light my-2">
+                        <i class="bi bi-person-plus-fill me-2"></i> Inscription
+                    </h3>
+                    <small>Rejoignez SuiviFinancier gratuitement</small>
+                </div>
+
+                <div class="card-body p-5">
+                    <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                            <label asp-for="Input.Email">Adresse Email</label>
+                            <span asp-validation-for="Input.Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                            <label asp-for="Input.Password">Mot de passe</label>
+                            <span asp-validation-for="Input.Password" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                            <label asp-for="Input.ConfirmPassword">Confirmer le mot de passe</label>
+                            <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button id="registerSubmit" type="submit" class="btn btn-success btn-lg shadow-sm">
+                                <i class="bi bi-check-circle-fill me-2"></i> Créer mon compte
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+
+                <div class="card-footer text-center py-3 bg-light border-top-0">
+                    <div class="small">
+                        <span class="text-muted">Déjà inscrit ?</span>
+                        <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl" class="fw-bold text-success text-decoration-none">Se connecter</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-3">
+                <a href="/" class="text-muted small text-decoration-none">
+                    <i class="bi bi-arrow-left"></i> Retour à l'accueil
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

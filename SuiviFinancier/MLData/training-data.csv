@@ -1,0 +1,251 @@
+TitreTransaction;Categorie
+Achat chez Carrefour;Alimentation
+McDo Paris;Restauration
+Loyer du mois;Logement
+Virement Netflix;Loisirs
+Salaire Nov;Revenu
+Facture électricité Total;Logement
+Remboursement ami;Revenu
+Essence station Shell;Transport
+Péage autoroute;Transport
+Achat de livre Fnac;Loisirs
+Assurance auto;Assurance
+Consultation médecin;Santé
+Achat sur Amazon;Divers
+Ticket de caisse Auchan;Alimentation
+Abonnement Spotify;Loisirs
+Pizza domicile;Restauration
+Courses Monoprix;Alimentation
+Metro Paris;Transport
+Eau potable;Logement
+Internet Box;Logement
+Prime annuelle;Revenu
+Médecin généraliste;Santé
+Pharmacie;Santé
+Restaurant chinois;Restauration
+Bus urbain;Transport
+Courses Intermarché;Alimentation
+Épicerie Orientale;Alimentation
+Primeur du Marché;Alimentation
+Courses Biocoop;Alimentation
+Achat fruits et légumes;Alimentation
+Achat produits laitiers Carrefour;Alimentation
+Boulangerie Tradition;Alimentation
+Supermarché Casino;Alimentation
+Course Carrefour Market;Alimentation
+Fromagerie locale;Alimentation
+Épicerie Halal;Alimentation
+Pain et viennoiseries;Alimentation
+Boucherie Artisanale;Alimentation
+Magasin BioNature;Alimentation
+Superette de quartier;Alimentation
+Drive Leclerc;Alimentation
+Courses U Drive;Alimentation
+Étal du Marché Central;Alimentation
+Délices orientaux;Alimentation
+Panier de fruits Bio;Alimentation
+Épicerie en ligne;Alimentation
+Poissonnerie La Marée;Alimentation
+Courses Alimentation Express;Alimentation
+Magasin Dia;Alimentation
+Achat boissons Monoprix;Alimentation
+Restaurant italien Napoli;Restauration
+Snack Le Délice;Restauration
+Tacos Avenue;Restauration
+Sandwicherie du Port;Restauration
+Restaurant grill House;Restauration
+Café Le Parisien;Restauration
+Pizzeria Bella Roma;Restauration
+Restaurant indien Taj Mahal;Restauration
+FoodTruck StreetFood;Restauration
+Crêperie Bretonne;Restauration
+Restaurant Marocain Marrakech;Restauration
+Fast-food Quick;Restauration
+Brasserie des Arts;Restauration
+Kebab Le Sultan;Restauration
+Buffet à volonté Zen;Restauration
+Restaurant végétarien Vert Mieux;Restauration
+Café de la Gare;Restauration
+Maison du Burger;Restauration
+Resto poulet braisé;Restauration
+Brunch Café Louise;Restauration
+Restaurant thaï Bangkok;Restauration
+Café Lounge;Restauration
+Pâtisserie salon de thé;Restauration
+Gaufres et crêpes maison;Restauration
+Restaurant tapas Barcelona;Restauration
+Acompte loyer;Logement
+Facture eau Suez;Logement
+Travaux réparation fenêtre;Logement
+Achat petit électroménager;Logement
+Paiement chauffage urbain;Logement
+Intervention serrurier;Logement
+Plomberie réparation fuite;Logement
+Magasin de bricolage Leroy Merlin;Logement
+Peinture et matériel Castorama;Logement
+Location garage;Logement
+Électricité Engie;Logement
+Redevance ordures ménagères;Logement
+Achat rideaux Maison;Logement
+Magasin But mobilier;Logement
+Décoration intérieure H&M Home;Logement
+Achat draps et couette;Logement
+Travaux carrelage;Logement
+Frais syndic copropriété;Logement
+Dépannage électroménager;Logement
+Tapis maison;Logement
+Entretien chaudière;Logement
+Rénovation salle de bain;Logement
+Achat luminaires;Logement
+Achat table basse;Logement
+Achat étagères;Logement
+Achat console Nintendo;Loisirs
+Abonnement Xbox Game Pass;Loisirs
+Magasin Micromania jeux;Loisirs
+Cinéma Gaumont;Loisirs
+Entrée musée national;Loisirs
+Location kayak;Loisirs
+Achat matériel de sport;Loisirs
+Achat cartes Pokémon;Loisirs
+Abonnement salle de sport;Loisirs
+Cours de guitare;Loisirs
+Location films Google Play;Loisirs
+Librairie Achat manga;Loisirs
+Achat figurines;Loisirs
+Escape Game;Loisirs
+Achat instruments musique;Loisirs
+Achat ski Decathlon;Loisirs
+Inscription cours danse;Loisirs
+Partie Laser Game;Loisirs
+Arcade Game Center;Loisirs
+Cours de dessin;Loisirs
+Achat puzzle 1000 pièces;Loisirs
+Bowling;Loisirs
+Billet théâtre;Loisirs
+Jeux de société;Loisirs
+Achat casque gaming;Loisirs
+Prime exceptionnelle;Revenu
+Remboursement impôts;Revenu
+Indemnité maladie;Revenu
+Virement freelance;Revenu
+Paiement client projet web;Revenu
+Allocation logement;Revenu
+Indemnité chômage;Revenu
+Versement pension;Revenu
+Revenu location immobilière;Revenu
+Prime shift de nuit;Revenu
+Commission vente;Revenu
+Remboursement frais entreprise;Revenu
+Virement soutien familial;Revenu
+Bonus productivité;Revenu
+Paiement prestation;Revenu
+Revenu activité secondaire;Revenu
+Indemnité déplacement;Revenu
+Remboursement sécurité sociale;Revenu
+Allocation familiale;Revenu
+Complément de salaire;Revenu
+Paiement heures supp;Revenu
+Rente mensuelle;Revenu
+Virement bourse étudiant;Revenu
+Aide exceptionnelle;Revenu
+Indemnité maternité;Revenu
+Recharge carte bus;Transport
+Taxi local;Transport
+Train SNCF;Transport
+Billet TER;Transport
+Location trottinette électrique;Transport
+Révision voiture garage;Transport
+Achat pneus auto;Transport
+Parking souterrain;Transport
+Lavage auto haute pression;Transport
+Location camion;Transport
+Car longue distance FlixBus;Transport
+Réparation scooter;Transport
+Ticket tramway;Transport
+Recharge bornes électriques;Transport
+Uber Eats Livraison;Transport
+Réservation covoiturage;Transport
+Station enrichissement carburant;Transport
+Réparation frein voiture;Transport
+Entretien vidange;Transport
+Pass autoroute;Transport
+Taxi aéroport;Transport
+Location vélo électrique;Transport
+Réparation trottinette;Transport
+Station essence BP;Transport
+Entretien clim automobile;Transport
+Consultation pédiatre;Santé
+Achat médicaments pharmacie;Santé
+Scanner médical;Santé
+Consultation dermatologue;Santé
+Achat compléments alimentaires;Santé
+Radio thoracique;Santé
+Séance orthophonie;Santé
+Consultation cardiologue;Santé
+Consultation gynécologue;Santé
+Visite clinique privée;Santé
+Achat pansements;Santé
+Test sanguin laboratoire;Santé
+Consultation ORL;Santé
+Vaccin grippe;Santé
+Achat vitamines pharmacie;Santé
+Séance psychologue;Santé
+Séance ostéopathie;Santé
+Consultation dentiste urgent;Santé
+Test COVID en pharmacie;Santé
+Achat matériel médical;Santé
+Achat crème dermatologique;Santé
+Consultation ophtalmologue;Santé
+Consultation rhumatologue;Santé
+Soins infirmiers;Santé
+IRMs craniennes;Santé
+Assurance téléphone;Assurance
+Prélèvement assurance scolaire;Assurance
+Assurance emprunteur;Assurance
+Assurance habitation premium;Assurance
+Assurance auto mensuelle;Assurance
+Assurance accident;Assurance
+Assurance responsabilité civile;Assurance
+Assurance décès;Assurance
+Renouvellement mutuelle;Assurance
+Assurance santé complémentaire;Assurance
+Assurance appareil électronique;Assurance
+Assurance jeunes conducteurs;Assurance
+Assurance juridique;Assurance
+Assurance carte bancaire;Assurance
+Assurance habitation sociale;Assurance
+Prélèvement contrat d'assurance;Assurance
+Assurance location voiture;Assurance
+Mutuelle hospitalisation;Assurance
+Assurance voyage annuelle;Assurance
+Ajustement de prime;Assurance
+Assurance entreprise;Assurance
+Assurance perte de revenus;Assurance
+Renouvellement contrat voiture;Assurance
+Assurance habitation confort;Assurance
+Assurance animaux;Assurance
+Achat fournitures scolaires;Divers
+Papeterie City;Divers
+Achat outils de bricolage;Divers
+Cadeau anniversaire;Divers
+Achat vêtements H&M;Divers
+Décoration saisonnière;Divers
+Achat lampe torche;Divers
+Achat smartphone reconditionné;Divers
+Achat housse téléphone;Divers
+Cadeaux enfants;Divers
+Achat parfum Sephora;Divers
+Achat tapis décoratif;Divers
+Frais administratifs;Divers
+Achat batterie externe;Divers
+Achat enceinte Bluetooth;Divers
+Produits ménagers;Divers
+Achat mugs Ikea;Divers
+Achat chargeur USB;Divers
+Achat valise;Divers
+Achat portefeuille cuir;Divers
+Achat lunettes de soleil;Divers
+Achat protections pluie;Divers
+Achat accessoires bureau;Divers
+Boutique cadeaux artisanaux;Divers
+Achat montre numérique;Divers

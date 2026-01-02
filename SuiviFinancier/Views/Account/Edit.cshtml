@@ -1,0 +1,99 @@
+@model SuiviFinancier.Models.Account
+
+@{ ViewData["Title"] = "Modifier Compte"; }
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-pencil"></i> Modifier le compte</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="Id" />
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label asp-for="Name" class="form-label fw-bold">Nom du compte</label>
+                                <input asp-for="Name" class="form-control" placeholder="ex: Compte Chèque BMCE" />
+                                <span asp-validation-for="Name" class="text-danger"></span>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label asp-for="AccountNumber" class="form-label">Numéro (Optionnel)</label>
+                                <input asp-for="AccountNumber" class="form-control" placeholder="ex: **** 1234" />
+                                <small class="text-muted">Pour votre référence uniquement.</small>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label asp-for="Currency" class="form-label fw-bold">Devise</label>
+                                <select asp-for="Currency" class="form-select">
+                                    <option value="MAD">MAD (Dirham)</option>
+                                    <option value="EUR">EUR (€)</option>
+                                    <option value="USD">USD ($)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label asp-for="Type" class="form-label fw-bold">Type de compte</label>
+                                <select asp-for="Type" class="form-select" id="accountTypeSelector" onchange="toggleSavingsOptions()">
+                                    <option value="Courant">Compte Courant</option>
+                                    <option value="Epargne">Compte Épargne / Coffre</option>
+                                    <option value="Especes">Espèces (Cash)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label asp-for="Balance" class="form-label fw-bold">Solde Actuel</label>
+                                <div class="input-group">
+                                    <input asp-for="Balance" class="form-control" type="number" step="0.01" />
+                                    <span class="input-group-text currency-symbol">DH</span>
+                                </div>
+                            </div>
+
+                            <div id="savingsOptions" style="display:none;" class="p-3 bg-light rounded border mb-3">
+                                <label asp-for="TargetAmount" class="form-label fw-bold text-success">
+                                    <i class="bi bi-flag"></i> Objectif à atteindre
+                                </label>
+                                <input asp-for="TargetAmount" class="form-control" type="number" step="0.01" placeholder="ex: 50000" />
+                                <small class="text-muted">Une barre de progression s'affichera.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-end mt-3">
+                        <a asp-action="Index" class="btn btn-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-success px-4">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleSavingsOptions() {
+        var type = document.getElementById("accountTypeSelector").value;
+        var savingsDiv = document.getElementById("savingsOptions");
+        
+        // Affiche le champ objectif seulement si c'est "Epargne"
+        if (type === "Epargne") {
+            savingsDiv.style.display = "block";
+        } else {
+            savingsDiv.style.display = "none";
+        }
+    }
+    
+    // Au chargement de la page, vérifier si c'est un compte Épargne
+    window.addEventListener('DOMContentLoaded', function() {
+        toggleSavingsOptions();
+    });
+</script>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

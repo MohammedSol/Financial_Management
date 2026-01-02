@@ -1,0 +1,142 @@
+@model SuiviFinancier.Models.Transaction
+
+@{
+    ViewData["Title"] = "Nouvelle Transaction";
+}
+
+<div class="container mt-4">
+    <h1>Nouvelle Transaction</h1>
+    <hr />
+    <div class="row">
+        <div class="col-md-6">
+            <form asp-action="Create" enctype="multipart/form-data">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Date" class="control-label"></label>
+                    <input asp-for="Date" class="form-control" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                    <span asp-validation-for="Date" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Description" class="control-label">Description</label>
+                    <div class="input-group">
+                        <input asp-for="Description" class="form-control" id="transactionTitle" placeholder="Ex: Courses Carrefour" />
+                        
+                        <button class="btn btn-outline-info" type="button" id="suggestCategoryButton" title="Suggérer la catégorie">
+                            <i class="bi bi-magic"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 form-group mb-3">
+                        <label asp-for="Amount" class="control-label">Montant</label>
+                        <input asp-for="Amount" class="form-control" type="number" step="0.01" />
+                        <span asp-validation-for="Amount" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="col-md-6 form-group mb-3">
+                        <label asp-for="Type" class="control-label">Type</label>
+                        <select asp-for="Type" class="form-control">
+                            <option value="Depense">Dépense</option>
+                            <option value="Revenu">Revenu</option>
+                        </select>
+                        <span asp-validation-for="Type" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="CategoryId" class="control-label">Catégorie</label>
+                    <select asp-for="CategoryId" class="form-control" asp-items="ViewBag.CategoryId" id="categoryDropdown">
+                        <option value="">-- Sélectionner une catégorie --</option>
+                    </select>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="AccountId" class="control-label">Compte débité/crédité</label>
+                    <select asp-for="AccountId" class="form-control" asp-items="ViewBag.AccountId">
+                        <option value="">-- Sélectionner un compte --</option>
+                    </select>
+                </div>
+
+                @* Upload désactivé temporairement
+                <div class="form-group mb-3">
+                    <label asp-for="ReceiptPath" class="form-label fw-bold">
+                        <i class="bi bi-paperclip"></i> Justificatif (Reçu/Facture)
+                    </label>
+                    <input type="file" class="form-control" accept="image/*,.pdf" disabled />
+                    <small class="text-muted">Format: Image (JPG, PNG) ou PDF. (Fonctionnalité temporairement désactivée)</small>
+                </div>
+                *@
+
+                <div class="form-group">
+                    <input type="submit" value="Ajouter" class="btn btn-primary" />
+                    <a asp-action="Index" class="btn btn-secondary">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        $(document).ready(function () {
+            // L'événement se déclenche quand on clique sur le bouton Magique
+            $('#suggestCategoryButton').click(function () {
+                suggestCategory();
+            });
+
+            function suggestCategory() {
+                var title = $('#transactionTitle').val();
+                var button = $('#suggestCategoryButton');
+                var dropdown = $('#categoryDropdown');
+
+                if (title.length < 3) {
+                    Swal.fire('Info', 'Entrez une description plus longue pour la prédiction.', 'info');
+                    return;
+                }
+
+                // Afficher un spinner pendant le chargement
+                button.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status"></span>');
+
+                // Appel AJAX vers notre nouvelle API C#
+                $.ajax({
+                    url: '@Url.Action("SuggestCategory", "Transaction")',
+                    type: 'GET',
+                    data: { title: title },
+                    success: function (response) {
+                        button.prop('disabled', false).html('<i class="bi bi-magic"></i>');
+
+                        if (response.success && response.suggestedCategory) {
+                            var suggestedName = response.suggestedCategory;
+                            
+                            // 1. Chercher l'option dans la liste déroulante qui correspond au nom
+                            var optionToSelect = dropdown.find('option').filter(function () {
+                                // On compare le texte de l'option (le nom de la catégorie)
+                                return $(this).text().trim() === suggestedName;
+                            }).first();
+
+                            if (optionToSelect.length) {
+                                // 2. Si on la trouve, on sélectionne son ID (sa valeur)
+                                dropdown.val(optionToSelect.val()); 
+                                Swal.fire('Succès!', 'Catégorie suggérée : ' + suggestedName, 'success');
+                            } else {
+                                Swal.fire('Alerte', 'Catégorie prédite "' + suggestedName + '" non trouvée dans la liste !', 'warning');
+                            }
+                        } else {
+                            Swal.fire('Erreur', response.message || 'La prédiction a échoué.', 'error');
+                        }
+                    },
+                    error: function () {
+                        button.prop('disabled', false).html('<i class="bi bi-magic"></i>');
+                        Swal.fire('Erreur', 'Erreur de connexion au serveur.', 'error');
+                    }
+                });
+            }
+        });
+    </script>
+}
