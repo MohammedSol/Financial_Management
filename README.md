@@ -20,6 +20,20 @@ Application Full Stack moderne de suivi financier avec architecture séparée Ba
 - **⚡ Cache Redis** : Performance optimisée avec mise en cache
 - **📤 Import/Export** : Gestion des données en format CSV/JSON
 
+### 🤖 Fonctionnalités Machine Learning (ML.NET)
+- **🏷️ Auto-Catégorisation Intelligente** : Classification automatique des transactions par leur titre
+  - **Algorithme** : SDCA Maximum Entropy (Multiclass Classification)
+  - **Exemple** : Tapez "Uber" → Le système suggère automatiquement "Transport"
+  - **Endpoints** : 
+    - `GET /api/ML/Train` - Entraîner le modèle
+    - `GET /api/ML/Test?text=Courses Carrefour` - Tester la prédiction
+  
+- **📈 Prédiction du Solde Futur** : Forecasting du solde sur 7 jours
+  - **Algorithme** : SSA (Singular Spectrum Analysis) - Time Series
+  - **Utilisation** : Graphique avec courbe en pointillés montrant l'évolution prévue du solde
+  - **Fonctionnalité** : "Serai-je à découvert le 30 du mois ?"
+  - **Données** : Historique des transactions et tendances de dépenses
+
 ## 📋 Prérequis
 
 ### Backend
@@ -50,7 +64,8 @@ SuiviFin/
 │   │   │   ├── AccountController.cs
 │   │   │   ├── CategoryController.cs
 │   │   │   └── UserController.cs
-│   │   └── HomeController.cs           # MVC Controller
+│   │   ├── MLController.cs             # Endpoints ML (Train/Test)
+│   │   └── HomeController.cs           # MVC Controller + Forecasting
 │   │
 │   ├── Models/
 │   │   ├── User.cs
@@ -70,6 +85,14 @@ SuiviFin/
 │   │
 │   ├── Hubs/
 │   │   └── NotificationHub.cs          # SignalR Hub
+│   │
+│   ├── ML/                             # Machine Learning
+│   │   ├── CategoryPredictorService.cs # Service de prédiction ML
+│   │   └── TransactionData.cs          # Modèle de données ML
+│   │
+│   ├── MLData/
+│   │   ├── training-data.csv           # Données d'entraînement
+│   │   └── category-model.zip          # Modèle ML entraîné
 │   │
 │   ├── Services/
 │   │   └── RedisService.cs             # Service Redis
@@ -232,6 +255,7 @@ Après le premier lancement, deux utilisateurs admin sont créés automatiquemen
 - **JWT Bearer Authentication** - Authentification par tokens
 - **SignalR** - Communication temps réel pour les notifications
 - **StackExchange.Redis** - Client Redis pour la mise en cache
+- **ML.NET** - Machine Learning pour la prédiction et classification
 - **SQL Server / LocalDB** - Base de données relationnelle
 
 ### Frontend (React)
@@ -255,6 +279,8 @@ Après le premier lancement, deux utilisateurs admin sont créés automatiquemen
 <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="9.0.0" />
 <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
 <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.0" />
+<PackageReference Include="Microsoft.ML" Version="3.0.1" />
+<PackageReference Include="Microsoft.ML.TimeSeries" Version="3.0.1" />
 <PackageReference Include="StackExchange.Redis" Version="2.8.16" />
 <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.0" />
 ```
@@ -438,8 +464,8 @@ npm run lint
 - [x] Frontend React moderne avec Material-UI
 - [x] Routes protégées par rôle
 - [x] Import/Export de données (CSV/JSON)
-- [x] Gestion complète des transactions, budgets, comptes
-
+- [x] Gestion complète des transactions, budgets, comptes- [x] **🤖 ML : Auto-catégorisation intelligente des transactions (Classification)**
+- [x] **📈 ML : Prédiction du solde futur sur 7 jours (Time Series - SSA)**
 ## 🚧 Développements Futurs
 
 - [ ] Graphiques et visualisations avancées
@@ -486,6 +512,20 @@ Content-Type: application/json
   "email": "user@example.com",
   "password": "User123!"
 }
+```
+
+### Machine Learning
+
+**Entraîner le modèle ML :**
+```bash
+GET http://localhost:5000/api/ML/Train
+```
+
+**Tester la prédiction de catégorie :**
+```bash
+GET http://localhost:5000/api/ML/Test?text=Courses Carrefour
+GET http://localhost:5000/api/ML/Test?text=Uber Paris
+GET http://localhost:5000/api/ML/Test?text=Netflix
 ```
 
 ### Admin Dashboard (nécessite JWT)
